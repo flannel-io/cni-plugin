@@ -11,6 +11,10 @@ FLANNEL_IPMASQ=true
 This information reflects the attributes of flannel network on the host.
 The flannel CNI plugin uses this information to configure another CNI plugin, such as bridge plugin.
 
+## Build
+
+Run `go mod vendor` and then `make`. The resulting `flannel` binary would be under the bin/ directory
+
 ## Operation
 Given the following network configuration file and the contents of `/run/flannel/subnet.env` above,
 ```json
