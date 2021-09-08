@@ -1,0 +1,45 @@
+name: build tests for flannel-cni
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.15.15
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: go mod vendor
+      run: go mod vendor
+
+    - name: build linux
+      run: make build_linux
+
+    - name: build windows
+      run: make build_windows
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.15.15
+
+    - run: go version
+
+    - name: go mod vendor
+      run: go mod vendor 
+
+    - name: test linux
+      run: make test_linux
