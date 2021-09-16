@@ -1,0 +1,2 @@
+FROM scratch
+COPY dist/flannel-s390x /flannel
