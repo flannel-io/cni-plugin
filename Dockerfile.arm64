@@ -1,0 +1,2 @@
+FROM scratch
+COPY dist/flannel-arm64 /flannel
