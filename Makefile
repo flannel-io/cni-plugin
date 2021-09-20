@@ -1,7 +1,7 @@
 .PHONY: build_linux build_windows test_linux
 .PHONY: clean release
 
-REGISTRY?=quay.io/coreos/flannel-cni-plugin
+REGISTRY?=rancher/flannel-cni-plugin
 QEMU_VERSION=v3.0.0
 
 # Default tag and architecture. Can be overridden
@@ -59,6 +59,23 @@ dist/qemu-%-static:
 	else \
 		wget -O dist/$(@F) https://github.com/multiarch/qemu-user-static/releases/download/$(QEMU_VERSION)/$(@F); \
 	fi 
+
+docker-push: dist/flannel-$(TAG)-$(ARCH).docker
+	docker push $(REGISTRY):$(TAG)-$(ARCH)
+
+docker-manifest-amend:
+	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create --amend $(REGISTRY):$(TAG) $(REGISTRY):$(TAG)-$(ARCH)
+
+docker-manifest-push:
+	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest push --purge $(REGISTRY):$(TAG)
+
+docker-push-all:
+	ARCH=amd64 make docker-push docker-manifest-amend
+	ARCH=arm make docker-push docker-manifest-amend
+	ARCH=arm64 make docker-push docker-manifest-amend
+	ARCH=ppc64le make docker-push docker-manifest-amend
+	ARCH=s390x make docker-push docker-manifest-amend
+	make docker-manifest-push
 
 test_linux:
 	scripts/test_linux.sh
