@@ -1,2 +1,2 @@
-FROM alpine
+FROM ppc64le/alpine:3.13
 COPY dist/flannel-ppc64le /flannel
