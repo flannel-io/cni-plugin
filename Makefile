@@ -32,7 +32,7 @@ dist/flannel-$(TAG)-$(ARCH).docker: dist/flannel-$(ARCH)
 #	docker save -o dist/flannel-$(TAG)-$(ARCH).docker $(REGISTRY):$(TAG)-$(ARCH)
 
 build_linux:
-	GOOS=linux scripts/build_flannel.sh
+	GOOS=linux GOARCH=$(ARCH) scripts/build_flannel.sh
 
 build_windows:
 	GOOS=windows scripts/build_flannel.sh
