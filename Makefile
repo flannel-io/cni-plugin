@@ -31,10 +31,13 @@ dist/flannel-$(TAG)-$(ARCH).docker: dist/flannel-$(ARCH)
 	docker build -f Dockerfile.$(ARCH) -t $(REGISTRY):$(TAG)-$(ARCH) .
 #	docker save -o dist/flannel-$(TAG)-$(ARCH).docker $(REGISTRY):$(TAG)-$(ARCH)
 
-build_linux:
+vendor:
+	go mod tidy
+	go mod vendor
+build_linux: vendor
 	GOOS=linux GOARCH=$(ARCH) scripts/build_flannel.sh
 
-build_windows:
+build_windows: vendor
 	GOOS=windows scripts/build_flannel.sh
 
 # This will build flannel cni-plugin natively using golang image
