@@ -18,14 +18,14 @@ make build_linux
 echo "Running tests"
 
 function download_cnis {
-    pushd bin/
+    pushd dist/
     curl -L https://github.com/containernetworking/plugins/releases/download/$CNI_VERSION/cni-plugins-linux-amd64-$CNI_VERSION.tgz | tar -xz
     popd
 }
 
 function testrun {
     download_cnis
-    sudo -E bash -c "umask 0; PATH=${GOPATH}/bin:$(pwd)/bin:${PATH} go test $@"
+    sudo -E bash -c "umask 0; PATH=${GOPATH}/dist:$(pwd)/dist:${PATH} go test $@"
 }
 
 COVERALLS=${COVERALLS:-""}

@@ -27,8 +27,8 @@ jobs:
         for arch in ${LINUX_ARCHES}; do
           echo "Building for arch $arch"
           ARCH=$arch make build_linux
-          file bin/flannel-$arch
-          rm bin/*
+          file dist/flannel-$arch
+          rm dist/*
         done
 
     - name: build windows
