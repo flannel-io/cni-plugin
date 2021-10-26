@@ -36,6 +36,11 @@ import (
 	"github.com/containernetworking/cni/pkg/version"
 )
 
+var (
+	Version       = "v1.0.0"
+	StringVersion = fmt.Sprintf("Flannel binary %s", Version)
+)
+
 const (
 	defaultSubnetFile = "/run/flannel/subnet.env"
 	defaultDataDir    = "/var/lib/cni/flannel"
@@ -267,7 +272,7 @@ func cmdDel(args *skel.CmdArgs) error {
 }
 
 func main() {
-	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, version.All, "flannel version unknown")
+	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, version.All, StringVersion)
 }
 
 func cmdCheck(args *skel.CmdArgs) error {
