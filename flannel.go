@@ -27,23 +27,28 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
+
+	// "github.com/flannel-io/cni-plugin/pkg/version"
 
 	"github.com/containernetworking/cni/pkg/invoke"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
-	"github.com/containernetworking/cni/pkg/version"
-)
-
-var (
-	Version       = "v1.0.0"
-	StringVersion = fmt.Sprintf("Flannel binary %s", Version)
+	cni "github.com/containernetworking/cni/pkg/version"
 )
 
 const (
 	defaultSubnetFile = "/run/flannel/subnet.env"
 	defaultDataDir    = "/var/lib/cni/flannel"
+)
+
+var (
+	Program string
+	Version string
+	Commit  string
+	buildDate string
 )
 
 type NetConf struct {
@@ -272,7 +277,9 @@ func cmdDel(args *skel.CmdArgs) error {
 }
 
 func main() {
-	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, version.All, StringVersion)
+	fullVer := fmt.Sprintf("CNI Plugin %s version %s (%s/%s) commit %s built on %s", Program, Version, runtime.GOOS, runtime.GOARCH, Commit, buildDate)
+	// fullver := fmt.Sprintf("CNI Plugin %s version %s (%s/%s) commit %s", version.Program, version.Version, runtime.GOOS, runtime.GOARCH, version.Commit)
+	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, cni.All, fullVer)
 }
 
 func cmdCheck(args *skel.CmdArgs) error {
