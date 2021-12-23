@@ -45,9 +45,9 @@ const (
 )
 
 var (
-	Program string
-	Version string
-	Commit  string
+	Program   string
+	Version   string
+	Commit    string
 	buildDate string
 )
 
@@ -278,7 +278,6 @@ func cmdDel(args *skel.CmdArgs) error {
 
 func main() {
 	fullVer := fmt.Sprintf("CNI Plugin %s version %s (%s/%s) commit %s built on %s", Program, Version, runtime.GOOS, runtime.GOARCH, Commit, buildDate)
-	// fullver := fmt.Sprintf("CNI Plugin %s version %s (%s/%s) commit %s", version.Program, version.Version, runtime.GOOS, runtime.GOARCH, version.Commit)
 	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, cni.All, fullVer)
 }
 

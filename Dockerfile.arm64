@@ -1,0 +1,2 @@
+FROM arm64v8/alpine:3.13
+COPY dist/flannel-arm64 /flannel

@@ -1,6 +1,12 @@
-name: build tests for flannel-cni
+name: build tests for flannel cni-plugin
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   test:
@@ -20,9 +26,6 @@ jobs:
         go-version: ${{ matrix.go }}
 
     - run: go version
-
-    - name: run go vet
-      run: go vet
 
     - name: build all
       run: make build_all

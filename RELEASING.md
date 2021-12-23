@@ -1,12 +1,27 @@
 # Release process
 
 ## Resulting artifacts
-Creating a new release produces the following artifacts:
+
+### [Manual] Release using local artifacts
+Creating a new release via `make release` produces the following directories containg artifacts:
+
+- Binaries: 
+  - `${GOPATH}/src/github.com/flannel-io/cni-plugin/dist`) 
+    - `flannel-<ARCH>` binaries
+
+
+- Tarfiles: 
+  - `${GOPATH}/src/github.com/flannel-io/cni-plugin/release-"${TAG}"`
+    - `cni-plugin-flannel-<OS>-<ARCH>-<TAG>.tar.gz` tarfiles containing one binary
+    - `.sha1`, `.sha256`, and `.sha512` files for each tarfile.
+
+### [Manual] Release using Docker artifacts
+Creating a new release via `make release_docker` produces the following artifacts:
 
 - Binaries (stored in the `release-<TAG>` directory) :
   - `flannel-<ARCH>-<VERSION>.tgz` binaries
   - `flannel-<ARCH>.tgz` binary (copy of amd64 platform binary)
-  - `sha1`, `sha256` and `sha512` files for the above files.
+  - `.sha1`, `.sha256`, and `.sha512` files for the above files.
 
 ## Preparing for a release
 1. Releases are performed by maintainers and should usually be discussed and planned at a maintainer meeting.

@@ -7,22 +7,19 @@ source ./scripts/version.sh
 SRC_DIR=${SRC_DIR:-$PWD}
 DOCKER=${DOCKER:-docker}
 GO=${GO:-go}
- GOPATH=${GOPATH:-$(go env GOPATH)}
+GOPATH=${GOPATH:-$(go env GOPATH)}
 
-# TAG=v1.0.0
-
- RELEASE_DIR=${GOPATH}/src/github.com/flannel-io/cni-plugin/release-"${TAG}"
- OUTPUT_DIR=${GOPATH}/src/github.com/flannel-io/cni-plugin/dist
+RELEASE_DIR=${GOPATH}/src/github.com/flannel-io/cni-plugin/release-"${TAG}"
+OUTPUT_DIR=${GOPATH}/src/github.com/flannel-io/cni-plugin/dist
 
 # Always clean first
-rm -rf "${SRC_DIR:/}""${OUTPUT_DIR}"
-rm -rf "${SRC_DIR:/}""${RELEASE_DIR}"
-mkdir -p "${SRC_DIR}"/"${RELEASE_DIR}"
-mkdir -p "${SRC_DIR}"/"${OUTPUT_DIR}"
+rm -rf "${OUTPUT_DIR}"
+rm -rf "${RELEASE_DIR}"
+mkdir -p "${RELEASE_DIR}"
+mkdir -p "${OUTPUT_DIR}"
 
 
-# -w ${GOPATH}/src/github.com/flannel-io/cni-plugin
-$DOCKER run -ti -v "${SRC_DIR}":/go/src/github.com/flannel-io/cni-plugin:z -e TAG="${TAG}" --rm golang:"${GOLANG_VERSION}-alpine" \
+$DOCKER run -ti -v "${SRC_DIR}":"${GOPATH}"/src/github.com/flannel-io/cni-plugin:z -e TAG="${TAG}" --rm golang:"${GOLANG_VERSION}-alpine" \
 /bin/sh -ex -c "\
     mkdir -p ${GOPATH}/src/github.com/flannel-io/cni-plugin/release-${TAG};
     mkdir -p ${GOPATH}/src/github.com/flannel-io/cni-plugin/dist;
