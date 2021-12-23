@@ -1,20 +1,17 @@
 #!/usr/bin/env bash
 #
 # Run CNI plugin tests.
-# 
+#
 # This needs sudo, as we'll be creating net interfaces.
 #
-set -xe
+set -ex
 
 # switch into the repo root directory
 cd $(dirname "$0")/..
 
 # What version of the containernetworking/plugins should we use for testing
-TAG=${TAG:-v1.0.0}
+# We now set TEST_TAG in the Makefile and pass it in
 CNI_VERSION=${TAG}
-
-# Build all plugins before testing
-make build_linux
 
 echo "Running tests"
 
@@ -26,7 +23,7 @@ function download_cnis {
 
 function testrun {
     download_cnis
-    sudo -E bash -c "umask 0; PATH=$PATH:${GOPATH:-$(go env GOPATH)}/dist:$(pwd)/dist go test $@"
+    sudo -E bash -c "umask 0; PATH=${GOPATH}/dist:$(pwd)/dist:${PATH} go test $@"
 }
 
 COVERALLS=${COVERALLS:-""}

@@ -75,4 +75,3 @@ ARG TAG
 COPY --from=flannel-cni  ${GOPATH}/src/github.com/flannel-io/cni-plugin/dist/ /go/src/github.com/flannel-io/cni-plugin/dist/
 COPY --from=flannel-cni  ${GOPATH}/src/github.com/flannel-io/cni-plugin/release-${TAG}/ /go/src/github.com/flannel-io/cni-plugin/release-${TAG}/
 COPY --from=flannel-cni  ${GOPATH}/src/github.com/flannel-io/cni-plugin/static-check.log /go/src/github.com/flannel-io/cni-plugin/static-check.log
-

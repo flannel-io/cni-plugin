@@ -1,6 +1,22 @@
 on:
+  # You must provide a tag either via the action input or the git ref (i.e push / create a tag).
+  # If you do not provide a tag the action will fail.
+
+  # If the tag of the release you are creating does not yet exist, you should set
+  # both the tag and commit action inputs. commit can point to a commit hash or a branch name (ex - main).
+#   workflow_dispatch:
+#     inputs:
+#       branch:
+#         description: 'Define branch name to run the release GH action against'
+#         required: true
+#         default: 'main'
   release:
-    types: [published]
+    type: [created]
+  push:
+    tags:
+      - v1.*
+    branches:
+      - main
 
 env:
   GO_VERSION: "1.16.10"
@@ -8,8 +24,113 @@ env:
   REPOSITORY: flannelcni/flannel-cni-plugin
 
 jobs:
+  setup-go:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        go: [ "1.16.10" ]
+    outputs:
+      GOPATH: ${{ steps.setup-go.outputs.GOPATH }}
+      GOROOT: ${{ steps.setup-go.outputs.GOROOT }}
+      GOCACHE: ${{ steps.setup-go.outputs.GOCACHE }}
+      GOMODCACHE: ${{ steps.setup-go.outputs.GOMODCACHE }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - uses: WillAbides/setup-go-faster@v1.7.0
+        id: setup-go
+        with:
+          go-version: ${{ matrix.go }}
+      - name: go mod vendor and tidy
+        run: make vendor
+      - uses: actions/cache@v2
+        id: cache-go
+        with:
+          path: |
+            {{ outputs.GOPATH }}
+            {{ outputs.GOMODCACHE }}
+            {{ outputs.GOCACHE }}
+            {{ outputs.GOROOT }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
-  build-binaries:
+  build:
+    needs: setup-go
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go: [ "1.16.10" ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - uses: WillAbides/setup-go-faster@v1.7.0
+        id: setup-go
+        if: steps.cache-go.outputs.cache-hit != 'true'
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: go mod vendor and tidy
+        if: steps.cache-go.outputs.cache-hit != 'true'
+        run: make vendor
+
+      - name: build all binaries for release
+        if: steps.cache-binaries.outputs.cache-hit != 'true'
+        run: make build_all
+
+        #      - uses: dominikh/staticcheck-action@v1.0.0
+        #        with:
+        #          version: "2021.1.2"
+        #          install-go: false
+        #          cache-key: ${{ matrix.go }}
+
+      - name: Cache build binaries
+        id: cache-binaries
+        uses: actions/cache@v2
+        env:
+          cache-name: binaries
+        with:
+          path: ${{ needs.setup-go.outputs.GOPATH }}/src/github.com/flannel-io/cni-plugin/dist
+          key: ${{ runner.os }}-binaries-${{ env.cache-name }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-binaries-${{ env.cache-name }}
+            ${{ runner.os }}-binaries-
+            ${{ runner.os }}-
+
+
+  test:
+    needs: [setup-go, build]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go: [ "1.16.10" ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - uses: WillAbides/setup-go-faster@v1.7.0
+        if: steps.cache-go.outputs.cache-hit != 'true'
+        id: setup-go
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: run tests
+        run: make test_linux
+
+      - name: run go vet
+        run: go vet
+
+  package:
+    needs: [setup-go, build, test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -23,6 +144,104 @@ jobs:
         with:
           fetch-depth: 1
       - uses: WillAbides/setup-go-faster@v1.7.0
+        id: setup-go
+        if: steps.cache-go.outputs.cache-hit != 'true'
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: create packages for release
+        run: make release
+
+      - name: Cache build tarfiles
+        id: cache-tarfiles
+        uses: actions/cache@v2
+        env:
+          cache-name: tarfiles
+        with:
+          path: ${{ needs.setup-go.outputs.GOPATH }}/src/github.com/flannel-io/cni-plugin/release-${{ github.ref_name }}
+          key:  ${{ runner.os }}-tarfiles-${{ env.cache-name }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-tarfiles-${{ env.cache-name }}
+            ${{ runner.os }}-tarfiles-
+            ${{ runner.os }}-
+
+      - uses: actions/upload-artifact@v2
+        id: upload-tarfiles
+        with:
+          name: flannel-cni-plugin-tarfiles
+          path: ${{ needs.setup-go.outputs.GOPATH }}/src/github.com/flannel-io/cni-plugin/release-${{ github.ref_name }}/
+
+      - uses: actions/upload-artifact@v2
+        id: upload-binaries
+        with:
+          name: flannel-cni-plugin-binaries
+          path: ${{ needs.setup-go.outputs.GOPATH }}/src/github.com/flannel-io/cni-plugin/dist/
+
+  release:
+    needs: [setup-go, build, test, package]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - uses: actions/download-artifact@v2
+        with:
+          id: download-tarfiles
+          name: flannel-cni-plugin-tarfiles
+          path: ~/release/
+      - uses: actions/download-artifact@v2
+        id: download-binaries
+        with:
+          name: flannel-cni-plugin-binaries
+          path: ~/release/
+      - uses: ncipollo/release-action@v1
+        id: release-artifacts
+        with:
+          artifacts: "~/release/*"
+#          prerelease: true
+          generateReleaseNotes: true
+          allowUpdates: true
+          commit: ${{ github.sha }}
+          tag: ${{ github.ref_name }}
+          omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
+          omitPrereleaseDuringUpdate: true
+  #         bodyFile: "body.md"
+  #         token: ${{ secrets.GITHUB_TOKEN }}
+
+  build-and-push-images:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        go: [ "1.16.10" ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - uses: WillAbides/setup-go-faster@v1.7.0
+        id: setup-go
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: go mod vendor
+        run: go mod vendor
+
+      - name: build linux
+        run: make build_all_linux_for_images
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v3
         with:
           go-version: ${{ matrix.go }}
 
@@ -46,20 +265,61 @@ jobs:
 
   upload-binaries:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        go: [ "1.16.10" ]
     steps:
-      - name: build
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v2
-        - uses: ncipollo/release-action@v1
-          with:
-            artifacts: "dist/flannel-*,release-${{ env.TAG }}/*.tar.gz"
-            prerelease: true
-            generateReleaseNotes: true
-            commit: ${{ github.sha }}
-            tag: ${{ github.ref_name }}
-    #         bodyFile: "body.md"
-    #         token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - uses: WillAbides/setup-go-faster@v1.7.0
+        id: setup-go
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: go mod vendor
+        run: go mod vendor
+
+      - name: build linux
+        run: make build_all_linux_for_images
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.REPOSITORY }}
+          flavor: latest=false
+          tags: |
+            type=ref,event=tag
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Create manifest for multi-arch image
+        if: github.repository_owner == 'flannel-io'
+        run: |
+          # get artifacts from previous steps and integrate into one multi-arch manifest
+          docker pull ${{ steps.meta.outputs.tags }}-amd64
+          docker pull ${{ steps.meta.outputs.tags }}-arm64
+          docker pull ${{ steps.meta.outputs.tags }}-arm
+          docker pull ${{ steps.meta.outputs.tags }}-mips64le
+          docker pull ${{ steps.meta.outputs.tags }}-ppc64le
+          docker pull ${{ steps.meta.outputs.tags }}-s390x
+          docker manifest create ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-amd64 ${{ steps.meta.outputs.tags }}-arm64 ${{ steps.meta.outputs.tags }}-arm ${{ steps.meta.outputs.tags }}-ppc64le ${{ steps.meta.outputs.tags }}-s390x
+          docker manifest annotate ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-amd64 --arch amd64
+          docker manifest annotate ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-arm64 --arch arm64
+          docker manifest annotate ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-arm --arch arm
+          docker manifest annotate ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-mips64le --arch mips64le
+          docker manifest annotate ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-ppc64le --arch ppc64le
+          docker manifest annotate ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-s390x --arch s390x
+          docker manifest push ${{ steps.meta.outputs.tags }}

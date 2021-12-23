@@ -1,0 +1,2 @@
+FROM s390x/alpine
+COPY dist/flannel-s390x /flannel

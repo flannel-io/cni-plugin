@@ -7,6 +7,10 @@ REPO=${REPO:-rancher}
 GO=${GO-go}
 GOARCH=${GOARCH:-$("${GO}" env GOARCH)}
 GOOS=${GOOS:-$("${GO}" env GOOS)}
+SRC_DIR=${SRC_DIR:-$PWD}
+DOCKER=${DOCKER:-docker}
+GOPATH=${GOPATH:-$(go env GOPATH)}
+
 if [ -z "$GOOS" ]; then
     if [ "${OS}" == "Windows_NT" ]; then
       GOOS="windows"
@@ -24,12 +28,13 @@ fi
 
 GIT_TAG=${TAG}
 TREE_STATE=clean
+BUILD_DATE=$(date -u "+%Y-%m-%dT%H:%M:%SZ")
 COMMIT=$(git rev-parse HEAD)$(if ! git diff --no-ext-diff --quiet --exit-code; then echo .dirty; fi)
 PLATFORM=${GOOS}-${GOARCH}
 RELEASE=${PROG}-${GOARCH}
 # hardcode versions unless set specifically
 VERSION=${VERSION:-v1.0.0}
-GOLANG_VERSION=${GOLANG_VERSION:-1.16.9}
+GOLANG_VERSION=${GOLANG_VERSION:-1.16.10}
 
 if [ -d .git ]; then
     if [ -z "${GIT_TAG}" ]; then
@@ -51,6 +56,13 @@ if [[ -n "${GIT_TAG}" ]]; then
 else
     VERSION="${VERSION}-dev+${COMMIT:0:8}$DIRTY"
 fi
+
+if [ -z "${TAG}" ]; then
+  TAG=${VERSION}
+fi
+
+RELEASE_DIR=${GOPATH}/src/github.com/flannel-io/cni-plugin/release-"${TAG}"
+OUTPUT_DIR=${GOPATH}/src/github.com/flannel-io/cni-plugin/dist
 
 echo  "Version: ${VERSION}"
 echo  "Commit: ${COMMIT}"

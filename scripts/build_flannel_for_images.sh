@@ -31,8 +31,10 @@ STATIC_FLAGS='-extldflags "-static"'
 
 GO_LDFLAGS="${STATIC_FLAGS} ${EXTRA_LDFLAGS}"
 
-if [ -z "${CGO_ENABLED}" ]; then
-  CGO_ENABLED="${CGO_ENABLED}"
+mkdir -p "${PWD}/dist"
+
+if [ -z ${CGO_ENABLED} ]; then
+  CGO_ENABLED=${CGO_ENABLED}
 else
   CGO_ENABLED=0
 fi
@@ -44,14 +46,14 @@ if [ "${GOOS}" = "linux" ]; then
     go build \
     -tags "${GO_BUILDTAGS}" \
     ${GO_GCFLAGS} ${GO_BUILD_FLAGS} \
-    -o ${OUTPUT_DIR}/${PROG}-${GOARCH} \
+    -o "${PWD}/dist/${PROG}-${GOARCH}" \
     -ldflags "${GO_LDFLAGS} ${VERSION_FLAGS}" \
     ${GO_TAGS}
 elif [ "${GOOS}" = "windows" ]; then
     go build \
     -tags "${GO_BUILDTAGS}" \
     ${GO_GCFLAGS} ${GO_BUILD_FLAGS} \
-    -o ${OUTPUT_DIR}/${PROG}-${GOARCH}.exe \
+    -o "${PWD}/dist/${PROG}-${GOARCH}.exe" \
     -ldflags "${VERSION_FLAGS} ${GO_LDFLAGS}"
 else 
    echo "GOOS:${GOOS} is not yet supported"
