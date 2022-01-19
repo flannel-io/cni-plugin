@@ -7,15 +7,15 @@ RUN set -x \
     curl \
     git \
     tar
-
+COPY ./scripts/semver-parse.sh /semver-parse.sh
+RUN chmod +x /semver-parse.sh
 RUN curl -sL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.43.0
-RUN git clone -b ${TAG} --depth=1 https://github.com/flannel-io/cni-plugin ${GOPATH}/src/github.com/flannel-io/cni-plugin
+RUN git clone -b $(/semver-parse.sh ${TAG} all) --depth=1 https://github.com/flannel-io/cni-plugin ${GOPATH}/src/github.com/flannel-io/cni-plugin
 WORKDIR ${GOPATH}/src/github.com/flannel-io/cni-plugin
 
 
 FROM build AS flannel-cni
 ARG TAG
-ARG ALL_ARCH
 
 WORKDIR ${GOPATH}/src/github.com/flannel-io/cni-plugin
 
@@ -27,21 +27,22 @@ RUN \
 ENV SRC_DIR=${SRC_DIR:-${pwd}}
 ENV DOCKER=${DOCKER:-docker}
 ENV GO=${GO:-go}
+ENV GOPATH=${GOPATH:-'${go env GOPATH}'}
 ENV RELEASE_DIR=${GOPATH}/src/github.com/flannel-io/cni-plugin/release-${TAG}
 ENV OUTPUT_DIR=${GOPATH}/src/github.com/flannel-io/cni-plugin/dist
 
 # Always clean first
 RUN \
-    rm -rf ${SRC_DIR}/${OUTPUT_DIR} \
-    && rm -rf ${SRC_DIR}/${RELEASE_DIR} \
-    && mkdir -p ${SRC_DIR}/${RELEASE_DIR} \
-    && mkdir -p ${SRC_DIR}/${OUTPUT_DIR}
+    rm -rf ${OUTPUT_DIR} \
+    && rm -rf ${RELEASE_DIR} \
+    && mkdir -p ${RELEASE_DIR} \
+    && mkdir -p ${OUTPUT_DIR}
 
 RUN go mod vendor && go mod tidy
 
 # for ARCH IN ${ALL_ARCH}; do
 RUN \
-    for arch in ('amd64', 'arm', 'arm64', 'ppc64le', 's390x'); do \
+    for arch in amd64 386 arm arm64 s390x mips64le ppc64le; do \
         GOARCH=${arch} ./scripts/build_flannel.sh; \
         for format in tgz; do \
             FILENAME=cni-plugin-flannel-linux-${arch}-${TAG}.${format}; \
@@ -59,7 +60,7 @@ RUN \
     done
 
 RUN \
-    for arch in amd64 arm arm64 ppc64le s390x; do \
+    for arch in amd64 386 arm arm64 s390x mips64le ppc64le; do \
         GOARCH=${arch} ./scripts/check_static.sh >> static-check.log; \
     done
 

@@ -6,7 +6,9 @@ REGISTRY?=docker.io/flannelcni/flannel-cni-plugin
 # Default tag and architecture. Can be overridden
 TAG?=$(shell git describe --tags --dirty --always)
 ARCH?=amd64
-ALL_ARCH=("amd64" "386" "arm" "arm64" "s390x" "mips64le" "ppc64le")
+SRC_DIR?=$(pwd)
+GO?=$(go)
+GOPATH?=$(go env GOPATH)
 
 # this is the upstream CNI plugin version used for testing
 TEST_TAG?=v1.0.0
@@ -53,7 +55,6 @@ build_all_docker: vendor
 		--no-cache \
 		--build-arg GOLANG_VERSION=$(GOLANG_VERSION) \
 		--build-arg TAG=$(TAG) \
-		--build-arg ALL_ARCH=$(ALL_ARCH) \
 		--tag $(REGISTRY):$(TAG) \
 		--tag $(REGISTRY):$(TAG)-$(ARCH) \
 		-f Dockerfile \
