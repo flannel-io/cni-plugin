@@ -134,7 +134,7 @@ jobs:
       contents: read
       packages: write
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         go: [ "1.16.10" ]
     steps:
@@ -148,6 +148,7 @@ jobs:
           go-version: ${{ matrix.go }}
 
       - name: create packages for release
+        if: success()
         run: make release
 
       - name: Cache build tarfiles
@@ -178,22 +179,28 @@ jobs:
   release:
     needs: [setup-go, build, test, package]
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 1
+
       - uses: actions/download-artifact@v2
         with:
           id: download-tarfiles
           name: flannel-cni-plugin-tarfiles
           path: ~/release/
+
       - uses: actions/download-artifact@v2
         id: download-binaries
         with:
           name: flannel-cni-plugin-binaries
           path: ~/release/
+
       - uses: ncipollo/release-action@v1
         id: release-artifacts
+        if: success()
         with:
           artifacts: "~/release/*"
 #          prerelease: true
@@ -207,69 +214,21 @@ jobs:
   #         bodyFile: "body.md"
   #         token: ${{ secrets.GITHUB_TOKEN }}
 
+
   build-and-push-images:
+    needs: [setup-go, build, test, package, release]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         go: [ "1.16.10" ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-
-      - uses: WillAbides/setup-go-faster@v1.7.0
-        id: setup-go
-        with:
-          go-version: ${{ matrix.go }}
-
-      - name: go mod vendor
-        run: go mod vendor
-
-      - name: build linux
-        run: make build_all_linux_for_images
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v3
-        with:
-          go-version: ${{ matrix.go }}
-
-      - name: go mod vendor and tidy
-        run: make vendor
-
-      - name: build all
-        run: make build_all
-
-      - name: run tests
-        run: make test_linux
-
-      - name: run go vet
-        run: go vet
-
-      - uses: dominikh/staticcheck-action@v1.0.0
-        with:
-          version: "2021.1.2"
-          install-go: false
-          cache-key: ${{ matrix.go }}
-
-  upload-binaries:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        go: [ "1.16.10" ]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+        if: success()
 
       - uses: WillAbides/setup-go-faster@v1.7.0
         id: setup-go
@@ -303,8 +262,108 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Create manifest for multi-arch image
+      - name: Build and push Docker image for amd64
+        if: github.repository_owner == 'flannel-io' && success()
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile.amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}-amd64
+
+      - name: Build and push Docker image for arm
         if: github.repository_owner == 'flannel-io'
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile.arm
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}-arm
+
+      - name: Build and push Docker image for arm64
+        if: github.repository_owner == 'flannel-io'
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile.arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}-arm64
+
+      - name: Build and push Docker image for s390x
+        if: github.repository_owner == 'flannel-io'
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile.s390x
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}-s390x
+
+      - name: Build and push Docker image for ppc64le
+        if: github.repository_owner == 'flannel-io'
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile.ppc64le
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}-ppc64le
+
+      - name: Build and push Docker image for mips64le
+        if: github.repository_owner == 'flannel-io'
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile.mips64le
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}-mips64le
+
+
+  build-and-push-multi-arch-image:
+    needs: [setup-go, build, test, package, release, build-and-push-images]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        go: [ "1.16.10" ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        if: success()
+
+      - uses: WillAbides/setup-go-faster@v1.7.0
+        id: setup-go
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: go mod vendor
+        run: go mod vendor
+
+      - name: build linux
+        if: success()
+        run: make build_all_linux_for_images
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.REPOSITORY }}
+          flavor: latest=false
+          tags: |
+            type=ref,event=tag
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+    
+      - name: Create manifest for multi-arch image
+        if: github.repository_owner == 'flannel-io' && success() && ${{ steps.meta.outputs.tags }}
         run: |
           # get artifacts from previous steps and integrate into one multi-arch manifest
           docker pull ${{ steps.meta.outputs.tags }}-amd64
@@ -313,7 +372,7 @@ jobs:
           docker pull ${{ steps.meta.outputs.tags }}-mips64le
           docker pull ${{ steps.meta.outputs.tags }}-ppc64le
           docker pull ${{ steps.meta.outputs.tags }}-s390x
-          docker manifest create ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-amd64 ${{ steps.meta.outputs.tags }}-arm64 ${{ steps.meta.outputs.tags }}-arm ${{ steps.meta.outputs.tags }}-ppc64le ${{ steps.meta.outputs.tags }}-s390x
+          docker manifest create ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-amd64 ${{ steps.meta.outputs.tags }}-arm64 ${{ steps.meta.outputs.tags }}-arm  ${{ steps.meta.outputs.tags }}-mips64le ${{ steps.meta.outputs.tags }}-ppc64le ${{ steps.meta.outputs.tags }}-s390x
           docker manifest annotate ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-amd64 --arch amd64
           docker manifest annotate ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-arm64 --arch arm64
           docker manifest annotate ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-arm --arch arm
