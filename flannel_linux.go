@@ -80,8 +80,7 @@ func doCmdAdd(args *skel.CmdArgs, n *NetConf, fenv *subnetEnv) error {
 	}
 
 	if !hasKey(n.Delegate, "ipMasq") {
-		// if flannel is not doing ipmasq, we should
-		ipmasq := !*fenv.ipmasq
+		ipmasq := *fenv.ipmasq
 		n.Delegate["ipMasq"] = ipmasq
 	}
 
