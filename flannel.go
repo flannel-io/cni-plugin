@@ -30,9 +30,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-
-	// "github.com/flannel-io/cni-plugin/pkg/version"
-
+	
 	"github.com/containernetworking/cni/pkg/invoke"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
