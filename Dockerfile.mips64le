@@ -1,0 +1,2 @@
+FROM mips64le/debian:stable-20211220-slim
+COPY dist/flannel-mips64le /flannel
