@@ -30,7 +30,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	
+
 	"github.com/containernetworking/cni/pkg/invoke"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
