@@ -23,7 +23,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -61,9 +60,9 @@ type NetConf struct {
 }
 
 type subnetEnv struct {
-	nw     *net.IPNet
+	nws    []*net.IPNet
 	sn     *net.IPNet
-	ip6Nw  *net.IPNet
+	ip6Nws []*net.IPNet
 	ip6Sn  *net.IPNet
 	mtu    *uint
 	ipmasq *bool
@@ -72,7 +71,7 @@ type subnetEnv struct {
 func (se *subnetEnv) missing() string {
 	m := []string{}
 
-	if se.nw == nil && se.ip6Nw == nil {
+	if len(se.nws) == 0 && len(se.ip6Nws) == 0 {
 		m = append(m, []string{"FLANNEL_NETWORK", "FLANNEL_IPV6_NETWORK"}...)
 	}
 	if se.sn == nil && se.ip6Sn == nil {
@@ -111,6 +110,23 @@ func getIPAMRoutes(n *NetConf) ([]types.Route, error) {
 	return rtes, nil
 }
 
+func isSubnetAlreadyPresent(nws []*net.IPNet, nw *net.IPNet) bool {
+	compareMask := func(m1 net.IPMask, m2 net.IPMask) bool {
+		for i := range m1 {
+			if m1[i] != m2[i] {
+				return false
+			}
+		}
+		return true
+	}
+	for _, nwi := range nws {
+		if nw.IP.Equal(nwi.IP) && compareMask(nw.Mask, nwi.Mask) {
+			return true
+		}
+	}
+	return false
+}
+
 func loadFlannelSubnetEnv(fn string) (*subnetEnv, error) {
 	f, err := os.Open(fn)
 	if err != nil {
@@ -125,9 +141,16 @@ func loadFlannelSubnetEnv(fn string) (*subnetEnv, error) {
 		parts := strings.SplitN(s.Text(), "=", 2)
 		switch parts[0] {
 		case "FLANNEL_NETWORK":
-			_, se.nw, err = net.ParseCIDR(parts[1])
-			if err != nil {
-				return nil, err
+			cidrs := strings.Split(parts[1], ",")
+			se.nws = make([]*net.IPNet, 0, len(cidrs))
+			for i := range cidrs {
+				_, nw, err := net.ParseCIDR(cidrs[i])
+				if err != nil {
+					return nil, err
+				}
+				if !isSubnetAlreadyPresent(se.nws, nw) {
+					se.nws = append(se.nws, nw)
+				}
 			}
 
 		case "FLANNEL_SUBNET":
@@ -137,9 +160,16 @@ func loadFlannelSubnetEnv(fn string) (*subnetEnv, error) {
 			}
 
 		case "FLANNEL_IPV6_NETWORK":
-			_, se.ip6Nw, err = net.ParseCIDR(parts[1])
-			if err != nil {
-				return nil, err
+			cidrs := strings.Split(parts[1], ",")
+			se.ip6Nws = make([]*net.IPNet, 0, len(cidrs))
+			for i := range cidrs {
+				_, ip6nw, err := net.ParseCIDR(cidrs[i])
+				if err != nil {
+					return nil, err
+				}
+				if !isSubnetAlreadyPresent(se.ip6Nws, ip6nw) {
+					se.ip6Nws = append(se.ip6Nws, ip6nw)
+				}
 			}
 
 		case "FLANNEL_IPV6_SUBNET":
@@ -177,7 +207,7 @@ func saveScratchNetConf(containerID, dataDir string, netconf []byte) error {
 		return err
 	}
 	path := filepath.Join(dataDir, containerID)
-	return ioutil.WriteFile(path, netconf, 0600)
+	return os.WriteFile(path, netconf, 0600)
 }
 
 func consumeScratchNetConf(containerID, dataDir string) (func(error), []byte, error) {
@@ -190,13 +220,14 @@ func consumeScratchNetConf(containerID, dataDir string) (func(error), []byte, er
 			_ = os.Remove(path)
 		}
 	}
-	netConfBytes, err := ioutil.ReadFile(path)
+	netConfBytes, err := os.ReadFile(path)
 
 	return cleanup, netConfBytes, err
 }
 
 func delegateAdd(cid, dataDir string, netconf map[string]interface{}) error {
 	netconfBytes, err := json.Marshal(netconf)
+	fmt.Fprintf(os.Stderr, "delegateAdd: netconf sent to delegate plugin:\n")
 	os.Stderr.Write(netconfBytes)
 	if err != nil {
 		return fmt.Errorf("error serializing delegate netconf: %v", err)
@@ -212,7 +243,6 @@ func delegateAdd(cid, dataDir string, netconf map[string]interface{}) error {
 		err = fmt.Errorf("failed to delegate add: %w", err)
 		return err
 	}
-
 	return result.Print()
 }
 
@@ -229,12 +259,11 @@ func isString(i interface{}) bool {
 func cmdAdd(args *skel.CmdArgs) error {
 	n, err := loadFlannelNetConf(args.StdinData)
 	if err != nil {
-		return err
+		return fmt.Errorf("loadFlannelNetConf failed: %w", err)
 	}
-
 	fenv, err := loadFlannelSubnetEnv(n.SubnetFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("loadFlannelSubnetEnv failed: %w", err)
 	}
 
 	if n.Delegate == nil {

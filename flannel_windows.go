@@ -40,7 +40,7 @@ func doCmdAdd(args *skel.CmdArgs, n *NetConf, fenv *subnetEnv) error {
 	// if flannel needs ipmasq - get the plugin to configure it
 	// (this is the opposite of how linux works - on linux the flannel daemon configure ipmasq)
 	n.Delegate["ipMasq"] = *fenv.ipmasq
-	n.Delegate["ipMasqNetwork"] = fenv.nw.String()
+	n.Delegate["ipMasqNetwork"] = fenv.nws[0].String()
 
 	n.Delegate["cniVersion"] = types020.ImplementedSpecVersion
 	if len(n.CNIVersion) != 0 {
