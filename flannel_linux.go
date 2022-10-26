@@ -49,24 +49,33 @@ func getDelegateIPAM(n *NetConf, fenv *subnetEnv) (map[string]interface{}, error
 		},
 		)
 	}
+
 	if fenv.ip6Sn != nil && fenv.ip6Sn.String() != "" {
 		rangesSlice = append(rangesSlice, []map[string]interface{}{
 			{"subnet": fenv.ip6Sn.String()},
 		},
 		)
 	}
+
 	ipam["ranges"] = rangesSlice
 
 	rtes, err := getIPAMRoutes(n)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read IPAM routes: %w", err)
 	}
-	if fenv.nw != nil {
-		rtes = append(rtes, types.Route{Dst: *fenv.nw})
+
+	for _, nw := range fenv.nws {
+		if nw != nil {
+			rtes = append(rtes, types.Route{Dst: *nw})
+		}
 	}
-	if fenv.ip6Nw != nil {
-		rtes = append(rtes, types.Route{Dst: *fenv.ip6Nw})
+
+	for _, nw := range fenv.ip6Nws {
+		if nw != nil {
+			rtes = append(rtes, types.Route{Dst: *nw})
+		}
 	}
+
 	ipam["routes"] = rtes
 
 	return ipam, nil

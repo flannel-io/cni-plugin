@@ -11,7 +11,7 @@ GO?=$(go)
 GOPATH?=$(go env GOPATH)
 
 # this is the upstream CNI plugin version used for testing
-TEST_TAG?=v1.0.0
+TEST_TAG?=v1.1.1
 
 # Only enable CGO (and build the UDP backend) on AMD64
 ifeq ($(ARCH),amd64)
@@ -21,7 +21,7 @@ else
 endif
 
 # Go version to use for builds. Can be overridden
-GOLANG_VERSION?=1.16.10
+GOLANG_VERSION?=1.19.2
 
 build_all: vendor build_all_linux build_windows
 	@echo "All arches should be built for $(TAG)"

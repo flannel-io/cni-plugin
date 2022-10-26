@@ -17,7 +17,7 @@ on:
       - v1.*
 
 env:
-  GO_VERSION: "1.16.10"
+  GO_VERSION: "1.19.2"
   LINUX_ARCHES: "amd64 386 arm arm64 s390x mips64le ppc64le"
   REPOSITORY: flannelcni/flannel-cni-plugin
 
@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: [ "1.16.10" ]
+        go: [ "1.19.2" ]
     outputs:
       GOPATH: ${{ steps.setup-go.outputs.GOPATH }}
       GOROOT: ${{ steps.setup-go.outputs.GOROOT }}
@@ -64,7 +64,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: [ "1.16.10" ]
+        go: [ "1.19.2" ]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -110,7 +110,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: [ "1.16.10" ]
+        go: [ "1.19.2" ]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -136,7 +136,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        go: [ "1.16.10" ]
+        go: [ "1.19.2" ]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -224,7 +224,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        go: [ "1.16.10" ]
+        go: [ "1.19.2" ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -323,7 +323,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        go: [ "1.16.10" ]
+        go: [ "1.19.2" ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2

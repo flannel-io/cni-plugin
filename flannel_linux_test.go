@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/containernetworking/cni/pkg/skel"
@@ -30,14 +29,16 @@ import (
 
 var _ = Describe("Flannel", func() {
 	var (
-		originalNS          ns.NetNS
-		onlyIpv4Input       string
-		onlyIpv6Input       string
-		dualStackInput      string
-		onlyIpv4SubnetFile  string
-		onlyIpv6SubnetFile  string
-		dualStackSubnetFile string
-		dataDir             string
+		originalNS                        ns.NetNS
+		onlyIpv4Input                     string
+		onlyIpv6Input                     string
+		dualStackInput                    string
+		onlyIpv4MutipleNetworksInput      string
+		onlyIpv4SubnetFile                string
+		onlyIpv6SubnetFile                string
+		dualStackSubnetFile               string
+		onlyIpv4MutipleNetworksSubnetFile string
+		dataDir                           string
 	)
 
 	BeforeEach(func() {
@@ -49,6 +50,8 @@ var _ = Describe("Flannel", func() {
 	AfterEach(func() {
 		Expect(originalNS.Close()).To(Succeed())
 	})
+
+	const hostLocalDataDir = "/var/lib/cni/networks/cni-flannel"
 
 	const inputTemplate = `
 {
@@ -95,8 +98,14 @@ FLANNEL_MTU=1472
 FLANNEL_IPMASQ=true
 `
 
+	const onlyIpv4MultipleNetworksFlannelSubnetEnv = `
+FLANNEL_NETWORK=10.1.0.0/16,192.168.0.0/16
+FLANNEL_SUBNET=10.1.17.1/24
+FLANNEL_MTU=1472
+FLANNEL_IPMASQ=true
+`
 	var writeSubnetEnv = func(contents string) string {
-		file, err := ioutil.TempFile("", "subnet.env")
+		file, err := os.CreateTemp("", "subnet.env")
 		Expect(err).NotTo(HaveOccurred())
 		_, err = file.WriteString(contents)
 		Expect(err).NotTo(HaveOccurred())
@@ -129,20 +138,24 @@ FLANNEL_IPMASQ=true
 		onlyIpv4SubnetFile = writeSubnetEnv(onlyIpv4FlannelSubnetEnv)
 		onlyIpv6SubnetFile = writeSubnetEnv(onlyIpv6FlannelSubnetEnv)
 		dualStackSubnetFile = writeSubnetEnv(dualStackFlannelSubnetEnv)
+		onlyIpv4MutipleNetworksSubnetFile = writeSubnetEnv(onlyIpv4MultipleNetworksFlannelSubnetEnv)
 
 		// flannel state dir
-		dataDir, err = ioutil.TempDir("", "dataDir")
+		dataDir, err = os.MkdirTemp("", "dataDir")
 		Expect(err).NotTo(HaveOccurred())
 		onlyIpv4Input = makeInput("", onlyIpv4SubnetFile)
 		onlyIpv6Input = makeInput("", onlyIpv6SubnetFile)
 		dualStackInput = makeInput("", dualStackSubnetFile)
+		onlyIpv4MutipleNetworksInput = makeInput("", onlyIpv4MutipleNetworksSubnetFile)
 	})
 
 	AfterEach(func() {
 		os.Remove(onlyIpv4SubnetFile)
 		os.Remove(onlyIpv6SubnetFile)
 		os.Remove(dualStackSubnetFile)
-		os.Remove(dataDir)
+		os.Remove(onlyIpv4MutipleNetworksSubnetFile)
+		os.RemoveAll(dataDir)
+		os.RemoveAll(hostLocalDataDir)
 	})
 
 	Describe("CNI lifecycle", func() {
@@ -174,7 +187,7 @@ FLANNEL_IPMASQ=true
 					path := fmt.Sprintf("%s/%s", dataDir, "some-container-id-ipv4")
 					Expect(path).Should(BeAnExistingFile())
 
-					netConfBytes, err := ioutil.ReadFile(path)
+					netConfBytes, err := os.ReadFile(path)
 					Expect(err).NotTo(HaveOccurred())
 					expected := `{
     "ipMasq": false,
@@ -183,6 +196,88 @@ FLANNEL_IPMASQ=true
             {
                 "dst": "10.1.0.0/16"
             }
+        ],
+        "ranges": [
+            [{
+                "subnet": "10.1.17.0/24"
+            }]
+        ],
+        "type": "host-local"
+    },
+    "isGateway": true,
+    "mtu": 1472,
+    "name": "cni-flannel",
+    "type": "bridge"
+}
+`
+					Expect(netConfBytes).Should(MatchJSON(expected))
+
+					result, err := current.NewResultFromResult(resI)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(result.IPs).To(HaveLen(1))
+
+					By("calling DEL with ipv4 stack")
+					err = testutils.CmdDelWithArgs(args, func() error {
+						return cmdDel(args)
+					})
+					Expect(err).NotTo(HaveOccurred())
+
+					By("check that plugin removes net config from state dir with ipv4 stack")
+					Expect(path).ShouldNot(BeAnExistingFile())
+
+					By("calling DEL again with ipv4 stack")
+					err = testutils.CmdDelWithArgs(args, func() error {
+						return cmdDel(args)
+					})
+					By("check that plugin does not fail due to missing net config with ipv4 stack")
+					Expect(err).NotTo(HaveOccurred())
+
+					return nil
+				})
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		Context("when using ipv4 stack with two networks", func() {
+			It("uses dataDir for storing network configuration with two ranges in ipv4 stack", func() {
+				const IFNAME = "eth0"
+
+				targetNs, err := testutils.NewNS()
+				Expect(err).NotTo(HaveOccurred())
+				defer targetNs.Close()
+
+				args := &skel.CmdArgs{
+					ContainerID: "some-container-id-ipv4-multiple",
+					Netns:       targetNs.Path(),
+					IfName:      IFNAME,
+					StdinData:   []byte(onlyIpv4MutipleNetworksInput),
+				}
+
+				err = originalNS.Do(func(ns.NetNS) error {
+					defer GinkgoRecover()
+
+					By("calling ADD with multi-network ipv4 stack")
+					resI, _, err := testutils.CmdAddWithArgs(args, func() error {
+						return cmdAdd(args)
+					})
+					Expect(err).NotTo(HaveOccurred())
+
+					By("check that plugin writes the net config to dataDir with ipv4 stack")
+					path := fmt.Sprintf("%s/%s", dataDir, "some-container-id-ipv4-multiple")
+					Expect(path).Should(BeAnExistingFile())
+
+					netConfBytes, err := os.ReadFile(path)
+					Expect(err).NotTo(HaveOccurred())
+					expected := `{
+    "ipMasq": false,
+    "ipam": {
+        "routes": [
+            {
+                "dst": "10.1.0.0/16"
+            },
+			{
+				"dst": "192.168.0.0/16"
+			}
         ],
         "ranges": [
             [{
@@ -253,7 +348,7 @@ FLANNEL_IPMASQ=true
 					path := fmt.Sprintf("%s/%s", dataDir, "some-container-id-ipv6")
 					Expect(path).Should(BeAnExistingFile())
 
-					netConfBytes, err := ioutil.ReadFile(path)
+					netConfBytes, err := os.ReadFile(path)
 					Expect(err).NotTo(HaveOccurred())
 					expected := `{
     "ipMasq": false,
@@ -326,13 +421,13 @@ FLANNEL_IPMASQ=true
 					resI, _, err := testutils.CmdAddWithArgs(args, func() error {
 						return cmdAdd(args)
 					})
-					Expect(err).NotTo(HaveOccurred())
+					Expect(err).ShouldNot(HaveOccurred())
 
 					By("check that plugin writes the net config to dataDir with dual stack")
 					path := fmt.Sprintf("%s/%s", dataDir, "some-container-id-dual-stack")
 					Expect(path).Should(BeAnExistingFile())
 
-					netConfBytes, err := ioutil.ReadFile(path)
+					netConfBytes, err := os.ReadFile(path)
 					Expect(err).NotTo(HaveOccurred())
 					expected := `{
     "ipMasq": false,
@@ -483,7 +578,7 @@ FLANNEL_IPMASQ=true
 				It("loads flannel subnet config with ipv4 stack", func() {
 					conf, err := loadFlannelSubnetEnv(onlyIpv4SubnetFile)
 					Expect(err).ShouldNot(HaveOccurred())
-					Expect(conf.nw.String()).To(Equal("10.1.0.0/16"))
+					Expect(conf.nws[0].String()).To(Equal("10.1.0.0/16"))
 					Expect(conf.sn.String()).To(Equal("10.1.17.0/24"))
 					var mtu uint = 1472
 					Expect(*conf.mtu).To(Equal(mtu))
@@ -495,7 +590,7 @@ FLANNEL_IPMASQ=true
 				It("loads flannel subnet config with ipv6 stack", func() {
 					conf, err := loadFlannelSubnetEnv(onlyIpv6SubnetFile)
 					Expect(err).ShouldNot(HaveOccurred())
-					Expect(conf.ip6Nw.String()).To(Equal("fc00::/48"))
+					Expect(conf.ip6Nws[0].String()).To(Equal("fc00::/48"))
 					Expect(conf.ip6Sn.String()).To(Equal("fc00::/64"))
 					var mtu uint = 1472
 					Expect(*conf.mtu).To(Equal(mtu))
@@ -507,9 +602,9 @@ FLANNEL_IPMASQ=true
 				It("loads flannel subnet config with dual stack", func() {
 					conf, err := loadFlannelSubnetEnv(dualStackSubnetFile)
 					Expect(err).ShouldNot(HaveOccurred())
-					Expect(conf.nw.String()).To(Equal("10.1.0.0/16"))
+					Expect(conf.nws[0].String()).To(Equal("10.1.0.0/16"))
 					Expect(conf.sn.String()).To(Equal("10.1.17.0/24"))
-					Expect(conf.ip6Nw.String()).To(Equal("fc00::/48"))
+					Expect(conf.ip6Nws[0].String()).To(Equal("fc00::/48"))
 					Expect(conf.ip6Sn.String()).To(Equal("fc00::/64"))
 					var mtu uint = 1472
 					Expect(*conf.mtu).To(Equal(mtu))
@@ -567,6 +662,43 @@ FLANNEL_IPMASQ=true
 				podsRoute := "{ \"dst\": \"10.1.0.0/16\" }\n"
 				subnet := "\"ranges\": [[{\"subnet\": \"10.1.17.0/24\"}]]"
 				expected := makeInputIPAM(inputIPAMType, inputIPAMRoutes+",\n"+podsRoute, ",\n"+subnet)
+				buf, _ := json.Marshal(ipam)
+				Expect(buf).Should(MatchJSON(expected))
+			})
+		})
+
+		Context("when input IPAM is provided with two networks ipv4 stack", func() {
+			BeforeEach(func() {
+				inputIPAM := makeInputIPAM("host-local", "", "")
+				onlyIpv4Input = makeInput(inputIPAM, onlyIpv4MutipleNetworksSubnetFile)
+			})
+			It("configures Delegate IPAM accordingly with two routes in ipv4 stack", func() {
+				conf, err := loadFlannelNetConf([]byte(onlyIpv4MutipleNetworksInput))
+				Expect(err).ShouldNot(HaveOccurred())
+				fenv, err := loadFlannelSubnetEnv(onlyIpv4MutipleNetworksSubnetFile)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				ipam, err := getDelegateIPAM(conf, fenv)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				expected := `{
+					"ranges": [
+					  [
+						{
+						  "subnet": "10.1.17.0/24"
+						}
+					  ]
+					],
+					"routes": [
+					  {
+						"dst": "10.1.0.0/16"
+					  },
+					  {
+						"dst": "192.168.0.0/16"
+					  }
+					],
+					"type": "host-local"
+				  }`
 				buf, _ := json.Marshal(ipam)
 				Expect(buf).Should(MatchJSON(expected))
 			})
