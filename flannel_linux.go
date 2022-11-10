@@ -135,7 +135,9 @@ func doCmdDel(args *skel.CmdArgs, n *NetConf) (err error) {
 
 	nc := &types.NetConf{}
 	if err = json.Unmarshal(netConfBytes, nc); err != nil {
-		return fmt.Errorf("failed to parse netconf: %v", err)
+		// Interface will remain in the bridge but will be removed when rebooting the node
+		fmt.Fprintf(os.Stderr, "failed to parse netconf: %v", err)
+		return nil
 	}
 
 	return invoke.DelegateDel(context.TODO(), nc.Type, netConfBytes, nil)
