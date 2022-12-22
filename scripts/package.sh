@@ -9,22 +9,20 @@ mkdir -p "${GOPATH}"/src/github.com/flannel-io/cni-plugin/dist
 cd "${GOPATH}"/src/github.com/flannel-io/cni-plugin
 umask 0022
 
-
+# linux archives
 for arch in amd64 386 arm arm64 s390x mips64le ppc64le; do
     echo $arch
     for format in tgz; do
         FILENAME=cni-plugin-flannel-linux-$arch-"${TAG}".$format
         FILEPATH="${RELEASE_DIR}"/$FILENAME
-        tar -C "${OUTPUT_DIR}" --owner=0 --group=0 -caf "$FILEPATH" .
+        tar -C "${OUTPUT_DIR}" --owner=0 --group=0 -caf "$FILEPATH" flannel-$arch
     done
 done
 
-
-for format in tgz; do
-    FILENAME=cni-plugin-flannel-windows-"${GOARCH}"-"${TAG}".$format
-    FILEPATH="${RELEASE_DIR}"/$FILENAME
-    tar -C "${OUTPUT_DIR}" --owner=0 --group=0 -caf "$FILEPATH" .
-done
+# windows archive
+FILENAME=cni-plugin-flannel-windows-"${GOARCH}"-"${TAG}".$format
+FILEPATH="${RELEASE_DIR}"/$FILENAME
+tar -C "${OUTPUT_DIR}" --owner=0 --group=0 -caf "$FILEPATH" flannel-amd64.exe
 
 cd "${SRC_DIR}"
 # linux
