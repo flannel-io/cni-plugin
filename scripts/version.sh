@@ -2,7 +2,7 @@
 set -ex
 
 PROG=${PROG:-flannel}
-REGISTRY=${REGISTRY:-docker.io/flannelcni/flannel-cni-plugin}
+REGISTRY=${REGISTRY:-docker.io/flannel/flannel-cni-plugin}
 REPO=${REPO:-rancher}
 GO=${GO-go}
 GOARCH=${GOARCH:-$("${GO}" env GOARCH)}

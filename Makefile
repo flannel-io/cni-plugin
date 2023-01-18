@@ -1,7 +1,7 @@
 .PHONY: vendor build_linux build_windows build_all build_all_docker
 .PHONY: clean vendor release 
 
-REGISTRY?=docker.io/flannelcni/flannel-cni-plugin
+REGISTRY?=docker.io/flannel/flannel-cni-plugin
 
 # Default tag and architecture. Can be overridden
 TAG?=$(shell git describe --tags --dirty --always)
