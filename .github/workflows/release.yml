@@ -20,7 +20,7 @@ on:
 env:
   GO_VERSION: "1.19.2"
   LINUX_ARCHES: "amd64 386 arm arm64 s390x mips64le ppc64le"
-  REPOSITORY: flannelcni/flannel-cni-plugin
+  REPOSITORY: flannel/flannel-cni-plugin
 
 jobs:
   setup-go:
