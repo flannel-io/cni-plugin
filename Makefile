@@ -1,5 +1,5 @@
 .PHONY: vendor build_linux build_windows build_all build_all_docker
-.PHONY: clean vendor release 
+.PHONY: clean vendor release
 
 REGISTRY?=docker.io/flannel/flannel-cni-plugin
 
@@ -21,7 +21,7 @@ else
 endif
 
 # Go version to use for builds. Can be overridden
-GOLANG_VERSION?=1.19.2
+GOLANG_VERSION?=1.20.5
 
 build_all: vendor build_all_linux build_windows
 	@echo "All arches should be built for $(TAG)"
@@ -50,7 +50,7 @@ vendor:
 	go mod tidy
 	go mod vendor
 
-build_all_docker: vendor 
+build_all_docker: vendor
 	docker build \
 		--no-cache \
 		--build-arg GOLANG_VERSION=$(GOLANG_VERSION) \
