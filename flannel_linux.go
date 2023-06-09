@@ -118,7 +118,7 @@ func doCmdAdd(args *skel.CmdArgs, n *NetConf, fenv *subnetEnv) error {
 	return delegateAdd(args.ContainerID, n.DataDir, n.Delegate)
 }
 
-func doCmdDel(args *skel.CmdArgs, n *NetConf) (err error) {
+func doCmdDel(args *skel.CmdArgs, n *NetConf) error {
 	cleanup, netConfBytes, err := consumeScratchNetConf(args.ContainerID, n.DataDir)
 	if err != nil {
 		if os.IsNotExist(err) {

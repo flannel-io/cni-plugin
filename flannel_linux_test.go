@@ -67,12 +67,6 @@ var _ = Describe("Flannel", func() {
 
 	const inputIPAMType = "my-ipam"
 
-	const inputIPAMNoTypeTemplate = `
-{
-    "unknown-param": "unknown-value",
-    "routes": [%s]%s
-}`
-
 	const inputIPAMRoutes = `
       { "dst": "10.96.0.0/12" },
       { "dst": "192.168.244.0/24", "gw": "10.1.17.20" }`
