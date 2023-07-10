@@ -23,6 +23,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -207,7 +208,28 @@ func saveScratchNetConf(containerID, dataDir string, netconf []byte) error {
 		return err
 	}
 	path := filepath.Join(dataDir, containerID)
-	return os.WriteFile(path, netconf, 0600)
+	return writeAndSyncFile(path, netconf, 0600)
+}
+
+// WriteAndSyncFile behaves just like ioutil.WriteFile in the standard library,
+// but calls Sync before closing the file. WriteAndSyncFile guarantees the data
+// is synced if there is no error returned.
+func writeAndSyncFile(filename string, data []byte, perm os.FileMode) error {
+	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perm)
+	if err != nil {
+		return err
+	}
+	n, err := f.Write(data)
+	if err == nil && n < len(data) {
+		err = io.ErrShortWrite
+	}
+	if err == nil {
+		err = f.Sync()
+	}
+	if err1 := f.Close(); err == nil {
+		err = err1
+	}
+	return err
 }
 
 func consumeScratchNetConf(containerID, dataDir string) (func(error), []byte, error) {
