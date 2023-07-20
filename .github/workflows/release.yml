@@ -189,7 +189,6 @@ jobs:
 
       - uses: actions/download-artifact@v3
         with:
-          id: download-tarfiles
           name: flannel-cni-plugin-tarfiles
           path: ~/release/
 
