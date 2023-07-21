@@ -97,7 +97,7 @@ jobs:
         env:
           cache-name: binaries
         with:
-          path: ${{ needs.setup-go.outputs.GOPATH }}/src/github.com/flannel-io/cni-plugin/dist
+          path: dist
           key: ${{ runner.os }}-binaries-${{ env.cache-name }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-binaries-${{ env.cache-name }}
@@ -158,7 +158,7 @@ jobs:
         env:
           cache-name: tarfiles
         with:
-          path: ${{ needs.setup-go.outputs.GOPATH }}/src/github.com/flannel-io/cni-plugin/release-${{ github.ref_name }}
+          path: release
           key:  ${{ runner.os }}-tarfiles-${{ env.cache-name }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-tarfiles-${{ env.cache-name }}
@@ -169,13 +169,13 @@ jobs:
         id: upload-tarfiles
         with:
           name: flannel-cni-plugin-tarfiles
-          path: ${{ needs.setup-go.outputs.GOPATH }}/src/github.com/flannel-io/cni-plugin/release-${{ github.ref_name }}/
+          path: release/
 
       - uses: actions/upload-artifact@v2
         id: upload-binaries
         with:
           name: flannel-cni-plugin-binaries
-          path: ${{ needs.setup-go.outputs.GOPATH }}/src/github.com/flannel-io/cni-plugin/dist/
+          path: dist/
 
   release:
     needs: [setup-go, build, test, package]

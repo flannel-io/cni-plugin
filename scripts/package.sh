@@ -4,9 +4,8 @@ set -ex
 cd $(dirname $0)/..
 source ./scripts/version.sh
 
-mkdir -p "${GOPATH}"/src/github.com/flannel-io/cni-plugin/release-"${TAG}"
-mkdir -p "${GOPATH}"/src/github.com/flannel-io/cni-plugin/dist
-cd "${GOPATH}"/src/github.com/flannel-io/cni-plugin
+mkdir -p release
+mkdir -p dist
 umask 0022
 
 # linux archives
@@ -28,8 +27,8 @@ cd "${SRC_DIR}"
 # linux
 for arch in amd64 386 arm arm64 s390x mips64le ppc64le; do
   GOOS=${GOOS:-$("${GO}" env GOOS)}
-  RELEASE_DIR=${GOPATH}/src/github.com/flannel-io/cni-plugin/release-"${TAG}" \
-  OUTPUT_DIR=${GOPATH}/src/github.com/flannel-io/cni-plugin/dist \
+  RELEASE_DIR=release \
+  OUTPUT_DIR=dist \
   GOARCH=$arch ./scripts/check_static.sh >> static-check.log
 done
 
@@ -38,8 +37,8 @@ for arch in amd64; do
   unset GOARCH
   unset GOOS
   echo $arch
-  RELEASE_DIR=${GOPATH}/src/github.com/flannel-io/cni-plugin/release-"${TAG}" \
-  OUTPUT_DIR=${GOPATH}/src/github.com/flannel-io/cni-plugin/dist \
+  RELEASE_DIR=release \
+  OUTPUT_DIR=dist \
   GOARCH=$arch GOOS=windows ./scripts/check_static.sh >> static-check.log
 done
 

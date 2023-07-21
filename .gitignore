@@ -1,6 +1,7 @@
 /bin
 /vendor
 /dist
+/release
 .idea*
 static-check.log
 .vscode/**
