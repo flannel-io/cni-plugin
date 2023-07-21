@@ -9,8 +9,8 @@ DOCKER=${DOCKER:-docker}
 GO=${GO:-go}
 GOPATH=${GOPATH:-$(go env GOPATH)}
 
-RELEASE_DIR=${GOPATH}/src/github.com/flannel-io/cni-plugin/release-"${TAG}"
-OUTPUT_DIR=${GOPATH}/src/github.com/flannel-io/cni-plugin/dist
+RELEASE_DIR=release
+OUTPUT_DIR=dist
 
 # Always clean first
 rm -rf "${OUTPUT_DIR}"
@@ -19,11 +19,11 @@ mkdir -p "${RELEASE_DIR}"
 mkdir -p "${OUTPUT_DIR}"
 
 
-$DOCKER run -ti -v "${SRC_DIR}":"${GOPATH}"/src/github.com/flannel-io/cni-plugin:z -e TAG="${TAG}" --rm golang:"${GOLANG_VERSION}-alpine" \
+$DOCKER run -ti -v "${SRC_DIR}":z -e TAG="${TAG}" --rm golang:"${GOLANG_VERSION}-alpine" \
 /bin/sh -ex -c "\
-    mkdir -p ${GOPATH}/src/github.com/flannel-io/cni-plugin/release-${TAG};
-    mkdir -p ${GOPATH}/src/github.com/flannel-io/cni-plugin/dist;
-    cd ${GOPATH}/src/github.com/flannel-io/cni-plugin; umask 0022;
+    mkdir -p release;
+    mkdir -p dist;
+    umask 0022;
     apk --no-cache add bash tar git; \
     source ./scripts/version.sh; \
         chmod +x ./scripts/* ; 

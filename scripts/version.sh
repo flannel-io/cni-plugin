@@ -61,8 +61,8 @@ if [ -z "${TAG}" ]; then
   TAG=${VERSION}
 fi
 
-RELEASE_DIR=${GOPATH}/src/github.com/flannel-io/cni-plugin/release-"${TAG}"
-OUTPUT_DIR=${GOPATH}/src/github.com/flannel-io/cni-plugin/dist
+RELEASE_DIR=release
+OUTPUT_DIR=dist
 
 echo  "Version: ${VERSION}"
 echo  "Commit: ${COMMIT}"
