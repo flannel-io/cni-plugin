@@ -34,6 +34,7 @@ build_all_linux: vendor
 	GOOS=linux GOARCH=s390x scripts/build_flannel.sh
 	GOOS=linux GOARCH=mips64le scripts/build_flannel.sh
 	GOOS=linux GOARCH=ppc64le scripts/build_flannel.sh
+	GOOS=linux GOARCH=loong64 scripts/build_flannel.sh
 
 
 build_all_linux_for_images: vendor
@@ -44,6 +45,7 @@ build_all_linux_for_images: vendor
 	GOOS=linux GOARCH=s390x scripts/build_flannel_for_images.sh
 	GOOS=linux GOARCH=mips64le scripts/build_flannel_for_images.sh
 	GOOS=linux GOARCH=ppc64le scripts/build_flannel_for_images.sh
+	GOOS=linux GOARCH=loong64 scripts/build_flannel_for_images.sh
 
 
 vendor:
