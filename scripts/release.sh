@@ -30,7 +30,7 @@ $DOCKER run -ti -v "${SRC_DIR}":z -e TAG="${TAG}" --rm golang:"${GOLANG_VERSION}
 
     go mod vendor && go mod tidy
 
-    for arch in amd64 386 arm arm64 s390x mips64le ppc64le; do \
+    for arch in amd64 386 arm arm64 s390x mips64le ppc64le riscv64; do \
         echo \$arch;\
         GOARCH=\$arch ./scripts/build_flannel.sh; \
         for format in tgz; do \
@@ -47,7 +47,7 @@ $DOCKER run -ti -v "${SRC_DIR}":z -e TAG="${TAG}" --rm golang:"${GOLANG_VERSION}
         tar -C ${OUTPUT_DIR} --owner=0 --group=0 -caf \$FILEPATH . ; \
     done;
 
-    for arch in amd64 386 arm arm64 s390x mips64le ppc64le; do \
+    for arch in amd64 386 arm arm64 s390x mips64le ppc64le riscv64; do \
         GOARCH=\$arch ./scripts/check_static.sh >> static-check.log; \
     done;
 
