@@ -165,13 +165,13 @@ jobs:
             ${{ runner.os }}-tarfiles-
             ${{ runner.os }}-
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         id: upload-tarfiles
         with:
           name: flannel-cni-plugin-tarfiles
           path: release/
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         id: upload-binaries
         with:
           name: flannel-cni-plugin-binaries
@@ -264,7 +264,7 @@ jobs:
 
       - name: Build and push Docker image for amd64
         if: github.repository_owner == 'flannel-io' && success()
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: Dockerfile.amd64
@@ -273,7 +273,7 @@ jobs:
 
       - name: Build and push Docker image for arm
         if: github.repository_owner == 'flannel-io'
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: Dockerfile.arm
@@ -282,7 +282,7 @@ jobs:
 
       - name: Build and push Docker image for arm64
         if: github.repository_owner == 'flannel-io'
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: Dockerfile.arm64
@@ -291,7 +291,7 @@ jobs:
 
       - name: Build and push Docker image for s390x
         if: github.repository_owner == 'flannel-io'
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: Dockerfile.s390x
@@ -300,7 +300,7 @@ jobs:
 
       - name: Build and push Docker image for ppc64le
         if: github.repository_owner == 'flannel-io'
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: Dockerfile.ppc64le
@@ -309,7 +309,7 @@ jobs:
 
       - name: Build and push Docker image for mips64le
         if: github.repository_owner == 'flannel-io'
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: Dockerfile.mips64le
