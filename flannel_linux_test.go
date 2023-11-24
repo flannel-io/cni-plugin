@@ -29,16 +29,16 @@ import (
 
 var _ = Describe("Flannel", func() {
 	var (
-		originalNS                        ns.NetNS
-		onlyIpv4Input                     string
-		onlyIpv6Input                     string
-		dualStackInput                    string
-		onlyIpv4MutipleNetworksInput      string
-		onlyIpv4SubnetFile                string
-		onlyIpv6SubnetFile                string
-		dualStackSubnetFile               string
-		onlyIpv4MutipleNetworksSubnetFile string
-		dataDir                           string
+		originalNS                         ns.NetNS
+		onlyIpv4Input                      string
+		onlyIpv6Input                      string
+		dualStackInput                     string
+		onlyIpv4MultipleNetworksInput      string
+		onlyIpv4SubnetFile                 string
+		onlyIpv6SubnetFile                 string
+		dualStackSubnetFile                string
+		onlyIpv4MultipleNetworksSubnetFile string
+		dataDir                            string
 	)
 
 	BeforeEach(func() {
@@ -132,7 +132,7 @@ FLANNEL_IPMASQ=true
 		onlyIpv4SubnetFile = writeSubnetEnv(onlyIpv4FlannelSubnetEnv)
 		onlyIpv6SubnetFile = writeSubnetEnv(onlyIpv6FlannelSubnetEnv)
 		dualStackSubnetFile = writeSubnetEnv(dualStackFlannelSubnetEnv)
-		onlyIpv4MutipleNetworksSubnetFile = writeSubnetEnv(onlyIpv4MultipleNetworksFlannelSubnetEnv)
+		onlyIpv4MultipleNetworksSubnetFile = writeSubnetEnv(onlyIpv4MultipleNetworksFlannelSubnetEnv)
 
 		// flannel state dir
 		dataDir, err = os.MkdirTemp("", "dataDir")
@@ -140,14 +140,14 @@ FLANNEL_IPMASQ=true
 		onlyIpv4Input = makeInput("", onlyIpv4SubnetFile)
 		onlyIpv6Input = makeInput("", onlyIpv6SubnetFile)
 		dualStackInput = makeInput("", dualStackSubnetFile)
-		onlyIpv4MutipleNetworksInput = makeInput("", onlyIpv4MutipleNetworksSubnetFile)
+		onlyIpv4MultipleNetworksInput = makeInput("", onlyIpv4MultipleNetworksSubnetFile)
 	})
 
 	AfterEach(func() {
 		os.Remove(onlyIpv4SubnetFile)
 		os.Remove(onlyIpv6SubnetFile)
 		os.Remove(dualStackSubnetFile)
-		os.Remove(onlyIpv4MutipleNetworksSubnetFile)
+		os.Remove(onlyIpv4MultipleNetworksSubnetFile)
 		os.RemoveAll(dataDir)
 		os.RemoveAll(hostLocalDataDir)
 	})
@@ -244,7 +244,7 @@ FLANNEL_IPMASQ=true
 					ContainerID: "some-container-id-ipv4-multiple",
 					Netns:       targetNs.Path(),
 					IfName:      IFNAME,
-					StdinData:   []byte(onlyIpv4MutipleNetworksInput),
+					StdinData:   []byte(onlyIpv4MultipleNetworksInput),
 				}
 
 				err = originalNS.Do(func(ns.NetNS) error {
@@ -664,12 +664,12 @@ FLANNEL_IPMASQ=true
 		Context("when input IPAM is provided with two networks ipv4 stack", func() {
 			BeforeEach(func() {
 				inputIPAM := makeInputIPAM("host-local", "", "")
-				onlyIpv4Input = makeInput(inputIPAM, onlyIpv4MutipleNetworksSubnetFile)
+				onlyIpv4Input = makeInput(inputIPAM, onlyIpv4MultipleNetworksSubnetFile)
 			})
 			It("configures Delegate IPAM accordingly with two routes in ipv4 stack", func() {
-				conf, err := loadFlannelNetConf([]byte(onlyIpv4MutipleNetworksInput))
+				conf, err := loadFlannelNetConf([]byte(onlyIpv4MultipleNetworksInput))
 				Expect(err).ShouldNot(HaveOccurred())
-				fenv, err := loadFlannelSubnetEnv(onlyIpv4MutipleNetworksSubnetFile)
+				fenv, err := loadFlannelSubnetEnv(onlyIpv4MultipleNetworksSubnetFile)
 				Expect(err).ShouldNot(HaveOccurred())
 
 				ipam, err := getDelegateIPAM(conf, fenv)
