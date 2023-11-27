@@ -1,2 +1,0 @@
-FROM riscv64/alpine:edge
-COPY dist/flannel-riscv64 /flannel

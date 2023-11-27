@@ -1,2 +1,0 @@
-FROM alpine:3.13
-COPY dist/flannel-amd64 /flannel
