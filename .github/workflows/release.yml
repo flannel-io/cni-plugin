@@ -1,3 +1,5 @@
+name: release flannel cni-plugin
+  
 on:
   # You must provide a tag either via the action input or the git ref (i.e push / create a tag).
   # If you do not provide a tag the action will fail.
@@ -13,114 +15,28 @@ on:
   release:
     types:
       - created
-  push:
-    tags:
-      - v1.*
 
 env:
   GO_VERSION: "1.20.5"
-  LINUX_ARCHES: "amd64 386 arm arm64 s390x mips64le ppc64le"
   REPOSITORY: flannel/flannel-cni-plugin
 
 jobs:
-  setup-go:
+  build-and-release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        go: [ "1.20.5" ]
-    outputs:
-      GOPATH: ${{ steps.setup-go.outputs.GOPATH }}
-      GOROOT: ${{ steps.setup-go.outputs.GOROOT }}
-      GOCACHE: ${{ steps.setup-go.outputs.GOCACHE }}
-      GOMODCACHE: ${{ steps.setup-go.outputs.GOMODCACHE }}
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 1
-      - uses: actions/setup-go@v3
-        id: setup-go
-        with:
-          go-version: ${{ matrix.go }}
-      - name: go mod vendor and tidy
-        run: make vendor
-      - uses: actions/cache@v3
-        id: cache-go
-        with:
-          path: |
-            {{ outputs.GOPATH }}
-            {{ outputs.GOMODCACHE }}
-            {{ outputs.GOCACHE }}
-            {{ outputs.GOROOT }}
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-  build:
-    needs: setup-go
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        go: [ "1.20.5" ]
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 1
 
       - uses: actions/setup-go@v3
-        id: setup-go
-        if: steps.cache-go.outputs.cache-hit != 'true'
         with:
-          go-version: ${{ matrix.go }}
+          go-version: ${{ env.GO_VERSION }}
 
       - name: go mod vendor and tidy
-        if: steps.cache-go.outputs.cache-hit != 'true'
         run: make vendor
 
       - name: build all binaries for release
-        if: steps.cache-binaries.outputs.cache-hit != 'true'
         run: make build_all
-
-        #      - uses: dominikh/staticcheck-action@v1.0.0
-        #        with:
-        #          version: "2021.1.2"
-        #          install-go: false
-        #          cache-key: ${{ matrix.go }}
-
-      - name: Cache build binaries
-        id: cache-binaries
-        uses: actions/cache@v3
-        env:
-          cache-name: binaries
-        with:
-          path: dist
-          key: ${{ runner.os }}-binaries-${{ env.cache-name }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-binaries-${{ env.cache-name }}
-            ${{ runner.os }}-binaries-
-            ${{ runner.os }}-
-
-
-  test:
-    needs: [setup-go, build]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        go: [ "1.20.5" ]
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 1
-      - uses: actions/setup-go@v3
-        if: steps.cache-go.outputs.cache-hit != 'true'
-        id: setup-go
-        with:
-          go-version: ${{ matrix.go }}
 
       - name: run tests
         run: make test_linux
@@ -128,42 +44,9 @@ jobs:
       - name: run go vet
         run: go vet
 
-  package:
-    needs: [setup-go, build, test]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    strategy:
-      fail-fast: true
-      matrix:
-        go: [ "1.20.5" ]
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 1
-      - uses: actions/setup-go@v3
-        id: setup-go
-        if: steps.cache-go.outputs.cache-hit != 'true'
-        with:
-          go-version: ${{ matrix.go }}
-
       - name: create packages for release
         if: success()
         run: make release
-
-      - name: Cache build tarfiles
-        id: cache-tarfiles
-        uses: actions/cache@v3
-        env:
-          cache-name: tarfiles
-        with:
-          path: release
-          key:  ${{ runner.os }}-tarfiles-${{ env.cache-name }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-tarfiles-${{ env.cache-name }}
-            ${{ runner.os }}-tarfiles-
-            ${{ runner.os }}-
 
       - uses: actions/upload-artifact@v3
         id: upload-tarfiles
@@ -177,72 +60,16 @@ jobs:
           name: flannel-cni-plugin-binaries
           path: dist/
 
-  release:
-    needs: [setup-go, build, test, package]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 1
-
-      - uses: actions/download-artifact@v3
-        with:
-          name: flannel-cni-plugin-tarfiles
-          path: ~/release/
-
-      - uses: actions/download-artifact@v3
-        id: download-binaries
-        with:
-          name: flannel-cni-plugin-binaries
-          path: ~/release/
-
-      - uses: ncipollo/release-action@v1
-        id: release-artifacts
-        if: success()
-        with:
-          artifacts: "~/release/*"
-#          prerelease: true
-          generateReleaseNotes: true
-          allowUpdates: true
-          commit: ${{ github.sha }}
-          tag: ${{ github.ref_name }}
-          omitBodyDuringUpdate: true
-          omitNameDuringUpdate: true
-          omitPrereleaseDuringUpdate: true
-  #         bodyFile: "body.md"
-  #         token: ${{ secrets.GITHUB_TOKEN }}
-
-
   build-and-push-images:
-    needs: [setup-go, build, test, package, release]
+    needs: [build-and-release]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    strategy:
-      fail-fast: true
-      matrix:
-        go: [ "1.20.5" ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         if: success()
-
-      - uses: actions/setup-go@v3
-        id: setup-go
-        with:
-          go-version: ${{ matrix.go }}
-
-      - name: go mod vendor
-        run: go mod vendor
-
-      - name: build linux
-        run: make build_all_linux_for_images
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -262,124 +89,12 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push Docker image for amd64
-        if: github.repository_owner == 'flannel-io' && success()
-        uses: docker/build-push-action@v4
+      - name: Build and push Docker image
+        # if: github.repository_owner == 'flannel-io' && success()
+        uses: docker/build-push-action@v5
         with:
           context: .
-          file: Dockerfile.amd64
+          file: Dockerfile.image
           push: true
-          tags: ${{ steps.meta.outputs.tags }}-amd64
-
-      - name: Build and push Docker image for arm
-        if: github.repository_owner == 'flannel-io'
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: Dockerfile.arm
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}-arm
-
-      - name: Build and push Docker image for arm64
-        if: github.repository_owner == 'flannel-io'
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: Dockerfile.arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}-arm64
-
-      - name: Build and push Docker image for s390x
-        if: github.repository_owner == 'flannel-io'
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: Dockerfile.s390x
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}-s390x
-
-      - name: Build and push Docker image for ppc64le
-        if: github.repository_owner == 'flannel-io'
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: Dockerfile.ppc64le
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}-ppc64le
-
-      - name: Build and push Docker image for mips64le
-        if: github.repository_owner == 'flannel-io'
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: Dockerfile.mips64le
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}-mips64le
-
-
-  build-and-push-multi-arch-image:
-    needs: [setup-go, build, test, package, release, build-and-push-images]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-      matrix:
-        go: [ "1.20.5" ]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        if: success()
-
-      - uses: actions/setup-go@v3
-        id: setup-go
-        with:
-          go-version: ${{ matrix.go }}
-
-      - name: go mod vendor
-        run: go mod vendor
-
-      - name: build linux
-        if: success()
-        run: make build_all_linux_for_images
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.REPOSITORY }}
-          flavor: latest=false
-          tags: |
-            type=ref,event=tag
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Create manifest for multi-arch image
-        if: github.repository_owner == 'flannel-io' && success() && ${{ steps.meta.outputs.tags }}
-        run: |
-          # get artifacts from previous steps and integrate into one multi-arch manifest
-          docker pull ${{ steps.meta.outputs.tags }}-amd64
-          docker pull ${{ steps.meta.outputs.tags }}-arm64
-          docker pull ${{ steps.meta.outputs.tags }}-arm
-          docker pull ${{ steps.meta.outputs.tags }}-mips64le
-          docker pull ${{ steps.meta.outputs.tags }}-ppc64le
-          docker pull ${{ steps.meta.outputs.tags }}-s390x
-          docker manifest create ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-amd64 ${{ steps.meta.outputs.tags }}-arm64 ${{ steps.meta.outputs.tags }}-arm  ${{ steps.meta.outputs.tags }}-mips64le ${{ steps.meta.outputs.tags }}-ppc64le ${{ steps.meta.outputs.tags }}-s390x
-          docker manifest annotate ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-amd64 --arch amd64
-          docker manifest annotate ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-arm64 --arch arm64
-          docker manifest annotate ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-arm --arch arm
-          docker manifest annotate ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-mips64le --arch mips64le
-          docker manifest annotate ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-ppc64le --arch ppc64le
-          docker manifest annotate ${{ steps.meta.outputs.tags }} ${{ steps.meta.outputs.tags }}-s390x --arch s390x
-          docker manifest push ${{ steps.meta.outputs.tags }}
-          docker pull ${{ steps.meta.outputs.tags }}
-          docker tag ${{ steps.meta.outputs.tags }} ${{ env.REPOSITORY }}:latest
-          docker push ${{ env.REPOSITORY }}:latest
+          platforms: linux/amd64,linux/arm64,linux/arm,linux/s390x,linux/ppc64le,linux/riscv64
+          tags: ${{ steps.meta.outputs.tags }}

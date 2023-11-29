@@ -1,2 +1,0 @@
-FROM arm32v6/alpine:3.13
-COPY dist/flannel-arm /flannel

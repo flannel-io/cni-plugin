@@ -32,21 +32,8 @@ build_all_linux: vendor
 	GOOS=linux GOARCH=arm scripts/build_flannel.sh
 	GOOS=linux GOARCH=arm64 scripts/build_flannel.sh
 	GOOS=linux GOARCH=s390x scripts/build_flannel.sh
-	GOOS=linux GOARCH=mips64le scripts/build_flannel.sh
 	GOOS=linux GOARCH=ppc64le scripts/build_flannel.sh
 	GOOS=linux GOARCH=riscv64 scripts/build_flannel.sh
-
-
-build_all_linux_for_images: vendor
-	GOOS=linux GOARCH=amd64 scripts/build_flannel_for_images.sh
-	GOOS=linux GOARCH=386 scripts/build_flannel_for_images.sh
-	GOOS=linux GOARCH=arm scripts/build_flannel_for_images.sh
-	GOOS=linux GOARCH=arm64 scripts/build_flannel_for_images.sh
-	GOOS=linux GOARCH=s390x scripts/build_flannel_for_images.sh
-	GOOS=linux GOARCH=mips64le scripts/build_flannel_for_images.sh
-	GOOS=linux GOARCH=ppc64le scripts/build_flannel_for_images.sh
-	GOOS=linux GOARCH=riscv64 scripts/build_flannel_for_images.sh
-
 
 vendor:
 	go mod tidy
