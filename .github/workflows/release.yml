@@ -48,17 +48,12 @@ jobs:
         if: success()
         run: make release
 
-      - uses: actions/upload-artifact@v3
-        id: upload-tarfiles
+      - name: Upload release files
+        uses: softprops/action-gh-release@v1
         with:
-          name: flannel-cni-plugin-tarfiles
-          path: release/
-
-      - uses: actions/upload-artifact@v3
-        id: upload-binaries
-        with:
-          name: flannel-cni-plugin-binaries
-          path: dist/
+          files: |
+            dist/*
+            release/*
 
   build-and-push-images:
     needs: [build-and-release]
