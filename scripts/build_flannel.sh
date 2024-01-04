@@ -31,8 +31,8 @@ STATIC_FLAGS='-extldflags "-static"'
 
 GO_LDFLAGS="${STATIC_FLAGS} ${EXTRA_LDFLAGS}"
 
-if [ -z "${CGO_ENABLED}" ]; then
-  CGO_ENABLED="${CGO_ENABLED}"
+if [ ${GOARCH} == "amd64" ]; then
+  CGO_ENABLED="1"
 else
   CGO_ENABLED=0
 fi
