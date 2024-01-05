@@ -92,7 +92,7 @@ flannel plugin will set the following fields in the delegated plugin configurati
 
 Additionally, for the bridge plugin, `isGateway` will be set to `true`, if not present.
 
-One use case of the `delegate` configuration is to allow adding back the routes to the cluster services and/or to the hosts when using `isDefaultGateway=false`. In that case, the bridge plugin does not install a default route and, as a result, only pod-to-pod connectivity would be available.
+The bridge plugin includes `isDefaultGateway` that when false allow adding back the routes to the cluster services and/or to the hosts. In that case, the bridge plugin does not install a default route and, as a result, only pod-to-pod connectivity would be available.
 
 ## Windows Support (Experimental)
 This plugin supports delegating to the windows CNI plugins (overlay.exe, l2bridge.exe) to work in conjunction with [Flannel on Windows](https://github.com/coreos/flannel/issues/833). 
