@@ -1,0 +1,22 @@
+FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
+
+FROM --platform=$BUILDPLATFORM golang:alpine AS build
+# copy xx scripts to your build stage
+COPY --from=xx / /
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+RUN apk --no-cache add bash
+COPY go.mod go.sum *.go /build/
+COPY scripts /build/scripts
+WORKDIR /build
+RUN xx-info env
+RUN go mod tidy && go mod vendor
+RUN export GOOS=$(xx-info os) &&\
+    export GOARCH=$(xx-info arch) &&\
+    ./scripts/build_flannel.sh &&\
+    mv ./dist/flannel-${GOARCH} /flannel
+
+FROM alpine:20230901
+ARG GOARCH
+COPY --from=build /flannel /flannel
+

@@ -1,6 +1,0 @@
-FROM golang:1.20.5
-
-COPY . /go/src
-WORKDIR /go/src
-RUN go mod vendor && go mod tidy
-RUN make build_windows
