@@ -327,7 +327,12 @@ func cmdDel(args *skel.CmdArgs) error {
 
 func main() {
 	fullVer := fmt.Sprintf("CNI Plugin %s version %s (%s/%s) commit %s built on %s", Program, Version, runtime.GOOS, runtime.GOARCH, Commit, buildDate)
-	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, cni.All, fullVer)
+	funcs := skel.CNIFuncs{
+		Add:   cmdAdd,
+		Del:   cmdDel,
+		Check: cmdCheck,
+	}
+	skel.PluginMainFuncs(funcs, cni.All, fullVer)
 }
 
 func cmdCheck(args *skel.CmdArgs) error {
