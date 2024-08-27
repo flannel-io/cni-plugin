@@ -3,7 +3,7 @@ module github.com/flannel-io/cni-plugin
 go 1.21
 
 require (
-	github.com/containernetworking/cni v1.2.1
+	github.com/containernetworking/cni v1.2.3
 	github.com/containernetworking/plugins v1.5.1
 	github.com/onsi/ginkgo/v2 v2.20.1
 	github.com/onsi/gomega v1.34.1
