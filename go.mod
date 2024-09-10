@@ -1,6 +1,6 @@
 module github.com/flannel-io/cni-plugin
 
-go 1.21
+go 1.22
 
 require (
 	github.com/containernetworking/cni v1.2.3
