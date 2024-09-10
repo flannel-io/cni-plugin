@@ -21,7 +21,7 @@ else
 endif
 
 # Go version to use for builds. Can be overridden
-GOLANG_VERSION?=1.21.11
+GOLANG_VERSION?=1.22.7
 
 build_all: vendor build_all_linux build_windows
 	@echo "All arches should be built for $(TAG)"
