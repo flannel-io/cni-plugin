@@ -17,7 +17,7 @@ on:
       - created
 
 env:
-  GO_VERSION: "1.22.7"
+  GO_VERSION: "1.23.3"
   REPOSITORY: flannel/flannel-cni-plugin
 
 jobs:

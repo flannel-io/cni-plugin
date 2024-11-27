@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: [ "1.22.7" ]
+        go: [ "1.23.3" ]
     steps:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v3
