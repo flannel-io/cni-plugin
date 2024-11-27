@@ -23,7 +23,7 @@ function download_cnis {
 
 function testrun {
     download_cnis
-    sudo -E bash -c "umask 0; PATH=${GOPATH}/dist:$(pwd)/dist:${PATH} go test $@"
+    sudo -E bash -c "umask 0; PATH=${GOPATH}/dist:$(pwd)/dist:${PATH} go test -count=1 $@"
 }
 
 COVERALLS=${COVERALLS:-""}
