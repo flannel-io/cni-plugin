@@ -27,6 +27,13 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+func deleteNamespace(ns ns.NetNS) error {
+	if err := ns.Close(); err != nil {
+		return err
+	}
+	return testutils.UnmountNS(ns)
+}
+
 var _ = Describe("Flannel", func() {
 	var (
 		originalNS                         ns.NetNS
@@ -48,7 +55,7 @@ var _ = Describe("Flannel", func() {
 	})
 
 	AfterEach(func() {
-		Expect(originalNS.Close()).To(Succeed())
+		Expect(deleteNamespace(originalNS)).To(Succeed())
 	})
 
 	const hostLocalDataDir = "/var/lib/cni/networks/cni-flannel"
@@ -159,7 +166,7 @@ FLANNEL_IPMASQ=true
 
 				targetNs, err := testutils.NewNS()
 				Expect(err).NotTo(HaveOccurred())
-				defer targetNs.Close()
+				defer deleteNamespace(targetNs)
 
 				args := &skel.CmdArgs{
 					ContainerID: "some-container-id-ipv4",
@@ -238,7 +245,7 @@ FLANNEL_IPMASQ=true
 
 				targetNs, err := testutils.NewNS()
 				Expect(err).NotTo(HaveOccurred())
-				defer targetNs.Close()
+				defer deleteNamespace(targetNs)
 
 				args := &skel.CmdArgs{
 					ContainerID: "some-container-id-ipv4-multiple",
@@ -320,7 +327,7 @@ FLANNEL_IPMASQ=true
 
 				targetNs, err := testutils.NewNS()
 				Expect(err).NotTo(HaveOccurred())
-				defer targetNs.Close()
+				defer deleteNamespace(targetNs)
 
 				args := &skel.CmdArgs{
 					ContainerID: "some-container-id-ipv6",
@@ -399,7 +406,7 @@ FLANNEL_IPMASQ=true
 
 				targetNs, err := testutils.NewNS()
 				Expect(err).NotTo(HaveOccurred())
-				defer targetNs.Close()
+				defer deleteNamespace(targetNs)
 
 				args := &skel.CmdArgs{
 					ContainerID: "some-container-id-dual-stack",

@@ -34,7 +34,7 @@ PLATFORM=${GOOS}-${GOARCH}
 RELEASE=${PROG}-${GOARCH}
 # hardcode versions unless set specifically
 VERSION=${VERSION:-v1.0.0}
-GOLANG_VERSION=${GOLANG_VERSION:-1.22.7}
+GOLANG_VERSION=${GOLANG_VERSION:-1.23.3}
 
 if [ -d .git ]; then
     if [ -z "${GIT_TAG}" ]; then
