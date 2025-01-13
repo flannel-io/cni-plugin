@@ -16,7 +16,7 @@ RUN export GOOS=$(xx-info os) &&\
     ./scripts/build_flannel.sh &&\
     mv ./dist/flannel-${GOARCH} /flannel
 
-FROM alpine:20240923
+FROM alpine:20250108
 ARG GOARCH
 COPY --from=build /flannel /flannel
 
