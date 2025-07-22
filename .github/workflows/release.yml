@@ -17,7 +17,7 @@ on:
       - created
 
 env:
-  GO_VERSION: "1.23.3"
+  GO_VERSION: "1.24.3"
   REPOSITORY: flannel/flannel-cni-plugin
   IMAGE_NAME: flannel-io/flannel-cni-plugin
   REGISTRY: ghcr.io
