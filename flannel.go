@@ -281,11 +281,11 @@ func isString(i interface{}) bool {
 func cmdAdd(args *skel.CmdArgs) error {
 	n, err := loadFlannelNetConf(args.StdinData)
 	if err != nil {
-		return fmt.Errorf("loadFlannelNetConf failed: %w", err)
+		return fmt.Errorf("failed to load flannel netconf file: %w", err)
 	}
 	fenv, err := loadFlannelSubnetEnv(n.SubnetFile)
 	if err != nil {
-		return fmt.Errorf("loadFlannelSubnetEnv failed: %w", err)
+		return fmt.Errorf("failed to load flannel 'subnet.env' file: %w. Check the flannel pod log for this node.", err)
 	}
 
 	if n.Delegate == nil {
