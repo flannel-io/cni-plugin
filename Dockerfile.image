@@ -1,20 +1,16 @@
 FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
 
-FROM --platform=$BUILDPLATFORM golang:alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.24.9-alpine3.22 AS build
 # copy xx scripts to your build stage
 COPY --from=xx / /
-ARG TARGETPLATFORM
-ARG BUILDPLATFORM
-RUN apk --no-cache add bash
-COPY go.mod go.sum *.go /build/
-COPY scripts /build/scripts
-WORKDIR /build
-RUN xx-info env
-RUN go mod tidy && go mod vendor
-RUN export GOOS=$(xx-info os) &&\
-    export GOARCH=$(xx-info arch) &&\
-    ./scripts/build_flannel.sh &&\
-    mv ./dist/flannel-${GOARCH} /flannel
+ARG TARGETARCH
+RUN apk --no-cache add bash make git
+WORKDIR /go/src/github.com/flannel-io/cni-plugin
+RUN --mount=type=bind,readwrite,target=/go/src/github.com/flannel-io/cni-plugin \
+    go mod tidy && go mod vendor
+RUN --mount=type=bind,readwrite,target=/go/src/github.com/flannel-io/cni-plugin \
+    ARCH=${TARGETARCH} make build_linux &&\
+    mv ./dist/flannel-${TARGETARCH} /flannel
 
 FROM alpine:20250108
 ARG GOARCH

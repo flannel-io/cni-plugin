@@ -22,7 +22,6 @@ VERSION_FLAGS="
     -X main.Version=${VERSION}
     -X main.Commit=${COMMIT:0:8}
     -X main.Program=${PROG:-flannel}
-    -X main.buildDate=${BUILD_DATE}
 "
 # STATIC_FLAGS='-linkmode external -extldflags "-static"'
 #STATIC_FLAGS='-extldflags "-static -Wl,--fatal-warnings"'
