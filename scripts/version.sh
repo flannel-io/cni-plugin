@@ -26,9 +26,8 @@ if [ -z "$GOOS" ]; then
     fi
 fi
 
-GIT_TAG=${TAG}
+GIT_TAG=$(git describe --tags --dirty --always)
 TREE_STATE=clean
-BUILD_DATE=$(date -u "+%Y-%m-%dT%H:%M:%SZ")
 COMMIT=$(git rev-parse HEAD)$(if ! git diff --no-ext-diff --quiet --exit-code; then echo .dirty; fi)
 PLATFORM=${GOOS}-${GOARCH}
 RELEASE=${PROG}-${GOARCH}
@@ -37,25 +36,13 @@ VERSION=${VERSION:-v1.0.0}
 GOLANG_VERSION=${GOLANG_VERSION:-1.24.3}
 
 if [ -d .git ]; then
-    if [ -z "${GIT_TAG}" ]; then
-        GIT_TAG=$(git tag -l --contains HEAD | head -n 1)
-    fi
-    if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
-        DIRTY="-dirty"
-        TREE_STATE=dirty
-    fi
-
     COMMIT=$(git log -n3 --pretty=format:"%H %ae" | cut -f1 -d\  | head -1)
     if [ -z "${COMMIT}" ]; then
         COMMIT=$(git rev-parse HEAD || true)
     fi
 fi
 
-if [[ -n "${GIT_TAG}" ]]; then
-    VERSION=${GIT_TAG}
-else
-    VERSION="${VERSION}-dev+${COMMIT:0:8}$DIRTY"
-fi
+VERSION="${GIT_TAG:0:6}"
 
 if [ -z "${TAG}" ]; then
   TAG=${VERSION}

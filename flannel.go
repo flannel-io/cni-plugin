@@ -43,10 +43,9 @@ const (
 )
 
 var (
-	Program   string
-	Version   string
-	Commit    string
-	buildDate string
+	Program string
+	Version string
+	Commit  string
 )
 
 type NetConf struct {
@@ -326,7 +325,7 @@ func cmdDel(args *skel.CmdArgs) error {
 }
 
 func main() {
-	fullVer := fmt.Sprintf("CNI Plugin %s version %s (%s/%s) commit %s built on %s", Program, Version, runtime.GOOS, runtime.GOARCH, Commit, buildDate)
+	fullVer := fmt.Sprintf("CNI Plugin %s version %s (%s/%s) commit %s", Program, Version, runtime.GOOS, runtime.GOARCH, Commit)
 	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, cni.All, fullVer)
 }
 
