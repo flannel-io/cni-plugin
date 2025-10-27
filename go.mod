@@ -5,7 +5,7 @@ go 1.24.3
 require (
 	github.com/containernetworking/cni v1.3.0
 	github.com/containernetworking/plugins v1.8.0
-	github.com/onsi/ginkgo/v2 v2.26.0
+	github.com/onsi/ginkgo/v2 v2.27.1
 	github.com/onsi/gomega v1.38.2
 )
 
