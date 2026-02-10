@@ -34,6 +34,7 @@ build_all_linux: vendor
 	GOOS=linux GOARCH=s390x scripts/build_flannel.sh
 	GOOS=linux GOARCH=ppc64le scripts/build_flannel.sh
 	GOOS=linux GOARCH=riscv64 scripts/build_flannel.sh
+  GOOS=linux GOARCH=loong64 scripts/build_flannel.sh
 
 vendor:
 	go mod tidy

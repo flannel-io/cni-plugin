@@ -42,7 +42,7 @@ RUN go mod vendor && go mod tidy
 
 # for ARCH IN ${ALL_ARCH}; do
 RUN \
-    for arch in amd64 386 arm arm64 s390x ppc64le riscv64; do \
+    for arch in amd64 386 arm arm64 s390x ppc64le riscv64 loong64; do \
         GOARCH=${arch} ./scripts/build_flannel.sh; \
         for format in tgz; do \
             FILENAME=cni-plugin-flannel-linux-${arch}-${TAG}.${format}; \
@@ -60,7 +60,7 @@ RUN \
     done
 
 RUN \
-    for arch in amd64 386 arm arm64 s390x ppc64le riscv64; do \
+    for arch in amd64 386 arm arm64 s390x ppc64le riscv64 loong64; do \
         GOARCH=${arch} ./scripts/check_static.sh >> static-check.log; \
     done
 
