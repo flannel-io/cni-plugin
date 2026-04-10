@@ -15,14 +15,15 @@ CNI_VERSION=${TAG}
 
 echo "Running tests"
 
+CNI_SHA256="682b49ff8933a997a52107161f1745f8312364b4c7f605ccdf7a77499130d89d"
+
 function download_cnis {
     pushd dist/
     local TGZ="cni-plugins-linux-amd64-${CNI_VERSION}.tgz"
     curl -sLO "https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/${TGZ}"
-    curl -sLO "https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/${TGZ}.sha256"
-    sha256sum -c "${TGZ}.sha256"
+    echo "${CNI_SHA256}  ${TGZ}" | sha256sum -c
     tar -xz -f "${TGZ}"
-    rm -f "${TGZ}" "${TGZ}.sha256"
+    rm -f "${TGZ}"
     popd
 }
 

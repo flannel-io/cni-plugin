@@ -12,9 +12,9 @@ RUN chmod +x /semver-parse.sh
 RUN set -x \
     && GOLANGCI_LINT_VERSION=1.43.0 \
     && GOLANGCI_LINT_ARCH=amd64 \
+    && GOLANGCI_LINT_SHA256=f3515cebec926257da703ba0a2b169e4a322c11dc31a8b4656b50a43e48877f4 \
     && curl -sLO https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${GOLANGCI_LINT_ARCH}.tar.gz \
-    && curl -sLO https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${GOLANGCI_LINT_ARCH}.tar.gz.sha256 \
-    && sha256sum -c golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${GOLANGCI_LINT_ARCH}.tar.gz.sha256 \
+    && echo "${GOLANGCI_LINT_SHA256}  golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${GOLANGCI_LINT_ARCH}.tar.gz" | sha256sum -c \
     && tar -xzf golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${GOLANGCI_LINT_ARCH}.tar.gz \
     && mv golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${GOLANGCI_LINT_ARCH}/golangci-lint /usr/local/bin/golangci-lint \
     && rm -rf golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${GOLANGCI_LINT_ARCH}*
