@@ -17,7 +17,12 @@ echo "Running tests"
 
 function download_cnis {
     pushd dist/
-    curl -L https://github.com/containernetworking/plugins/releases/download/$CNI_VERSION/cni-plugins-linux-amd64-$CNI_VERSION.tgz | tar -xz
+    local TGZ="cni-plugins-linux-amd64-${CNI_VERSION}.tgz"
+    curl -sLO "https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/${TGZ}"
+    curl -sLO "https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/${TGZ}.sha256"
+    sha256sum -c "${TGZ}.sha256"
+    tar -xz -f "${TGZ}"
+    rm -f "${TGZ}" "${TGZ}.sha256"
     popd
 }
 

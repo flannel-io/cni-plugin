@@ -9,7 +9,15 @@ RUN set -x \
     tar
 COPY ./scripts/semver-parse.sh /semver-parse.sh
 RUN chmod +x /semver-parse.sh
-RUN curl -sL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.43.0
+RUN set -x \
+    && GOLANGCI_LINT_VERSION=1.43.0 \
+    && GOLANGCI_LINT_ARCH=amd64 \
+    && curl -sLO https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${GOLANGCI_LINT_ARCH}.tar.gz \
+    && curl -sLO https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${GOLANGCI_LINT_ARCH}.tar.gz.sha256 \
+    && sha256sum -c golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${GOLANGCI_LINT_ARCH}.tar.gz.sha256 \
+    && tar -xzf golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${GOLANGCI_LINT_ARCH}.tar.gz \
+    && mv golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${GOLANGCI_LINT_ARCH}/golangci-lint /usr/local/bin/golangci-lint \
+    && rm -rf golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${GOLANGCI_LINT_ARCH}*
 RUN git clone -b $(/semver-parse.sh ${TAG} all) --depth=1 https://github.com/flannel-io/cni-plugin ${GOPATH}/src/github.com/flannel-io/cni-plugin
 WORKDIR ${GOPATH}/src/github.com/flannel-io/cni-plugin
 
