@@ -20,9 +20,6 @@ else
 	CGO_ENABLED=0
 endif
 
-# Go version to use for builds. Can be overridden
-GOLANG_VERSION?=1.24.3
-
 build_all: vendor build_all_linux build_windows
 	@echo "All arches should be built for $(TAG)"
 
@@ -42,7 +39,6 @@ vendor:
 build_all_docker: vendor
 	docker build \
 		--no-cache \
-		--build-arg GOLANG_VERSION=$(GOLANG_VERSION) \
 		--build-arg TAG=$(TAG) \
 		--tag $(REGISTRY):$(TAG) \
 		--tag $(REGISTRY):$(TAG)-$(ARCH) \
