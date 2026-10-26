@@ -1,0 +1,2 @@
+FROM cr.loongnix.cn/library/debian:buster-slim
+COPY dist/flannel-loong64 /flannel
