@@ -15,7 +15,7 @@ CNI_VERSION=${TAG}
 
 echo "Running tests"
 
-CNI_SHA256="682b49ff8933a997a52107161f1745f8312364b4c7f605ccdf7a77499130d89d"
+CNI_SHA256="ce8603d6a1bd448efba5bd6dc44f38dce349f821aa57e1bb354b52628ebf1853"
 
 function download_cnis {
     pushd dist/

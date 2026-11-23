@@ -11,7 +11,7 @@ GO?=$(go)
 GOPATH?=$(go env GOPATH)
 
 # this is the upstream CNI plugin version used for testing
-TEST_TAG?=v1.6.0
+TEST_TAG?=v1.10.0
 
 # Only enable CGO (and build the UDP backend) on AMD64
 ifeq ($(ARCH),amd64)
